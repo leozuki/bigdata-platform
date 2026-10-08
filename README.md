@@ -1,143 +1,119 @@
-# 🏠 BDS Data Pipeline – BigData Lead Platform
+# BigData Lead Platform
 
-Hệ thống **xử lý, làm giàu và chấm điểm khách hàng Bất động sản bằng AI**, kèm **Ads Engine** để phân tích và tối ưu quảng cáo Facebook.
+Công cụ giúp đội kinh doanh bất động sản quản lý và khai thác danh sách khách hàng hiệu quả hơn.
 
-Gom hàng nghìn file Excel/CSV khách hàng rời rạc → chuẩn hoá & khử trùng lặp → hợp nhất danh tính (SĐT ↔ Facebook UID) → phân cụm & chấm điểm lead (0–10) → hiển thị trên dashboard để đội Sales ưu tiên chăm sóc.
+Thông thường, dữ liệu khách hàng nằm rải rác trong rất nhiều file Excel, CSV với định dạng khác nhau, trùng lặp và thiếu thông tin. Dự án này gom tất cả lại một chỗ, làm sạch, bổ sung thông tin còn thiếu, sau đó chấm điểm từng khách hàng để Sales biết nên gọi cho ai trước.
 
-> [!IMPORTANT]
-> Repo này **chỉ chứa mã nguồn**. Không có dữ liệu khách hàng nào được đưa lên. Thư mục `data/` và mọi file `*.xlsx`, `*.csv`, `*.db` đều bị chặn bởi `.gitignore`.
+Ngoài ra, hệ thống có thêm phần phân tích quảng cáo Facebook: theo dõi chi phí, đánh giá chất lượng khách hàng mà mỗi chiến dịch mang về và gợi ý nên tăng hay giảm ngân sách.
 
----
+**Lưu ý:** Repo này chỉ chứa mã nguồn, không kèm bất kỳ dữ liệu khách hàng nào.
 
-## ✨ Tính năng chính
+## Hệ thống làm được gì
 
-| Giai đoạn | Mô tả | Module |
-|---|---|---|
-| **Phase 1 – Data Pipeline** | Đọc hàng loạt Excel/CSV (tự nhận encoding), chuẩn hoá SĐT/tên, khử trùng lặp, map SĐT ↔ Facebook UID, phân khúc audience | `src/phase1_pipeline/` |
-| **Phase 2 – Enrichment** | Import dữ liệu từ tool scraping Facebook, tìm kiếm Google Custom Search, lọc & ghép hồ sơ | `src/phase2_enrichment/` |
-| **Phase 3 – AI Scoring** | Phân cụm khách hàng (scikit-learn), chấm điểm lead 0–10, xếp hạng VIP | `src/phase3_scoring/` |
-| **Analytics** | Mô hình RFM, unified scorer, phân tích ý định (intent) | `src/analytics/`, `src/intent_analyzer.py` |
-| **Ads Engine** | Kết nối Facebook Marketing API & Messenger API, phân tích chi phí (CPL/CPM/CTR), chấm chất lượng lead, đề xuất & tự động tối ưu chiến dịch (có chế độ dry-run/mock) | `src/ads_engine/` |
-| **Dashboard** | Flask (Ads, CRM Leads, Multi-Account) và Streamlit (Data Health, 360° Profile, AI Clusters) | `dashboard/`, `src/dashboard/` |
+**1. Gom và làm sạch dữ liệu**
+Đọc hàng loạt file Excel/CSV, tự xử lý lỗi font tiếng Việt, chuẩn hoá số điện thoại và họ tên, loại bỏ khách hàng bị trùng. Nếu có file đối chiếu, hệ thống sẽ ghép số điện thoại với tài khoản Facebook tương ứng.
 
-## 🧭 Kiến trúc
+**2. Bổ sung thông tin**
+Lấy thêm dữ liệu từ các file xuất ra của công cụ quét Facebook và từ kết quả tìm kiếm Google, rồi ghép vào hồ sơ khách hàng đã có.
 
-```mermaid
-flowchart LR
-    A["Excel / CSV thô"] --> P1["Phase 1<br/>Ingest · Dedup · Identity map"]
-    P1 --> DB[("SQLite / PostgreSQL")]
-    FB["FB scraper CSV"] --> P2["Phase 2<br/>Enrichment"]
-    G["Google Search API"] --> P2
-    P2 --> DB
-    DB --> P3["Phase 3<br/>Clustering · Lead scoring"]
-    P3 --> DB
-    META["Meta Ads / Messenger API"] <--> ADS["Ads Engine"]
-    ADS <--> DB
-    DB --> D1["Flask Dashboard :5000"]
-    DB --> D2["Streamlit Dashboard :8502"]
-```
+**3. Chấm điểm khách hàng**
+Dùng máy học để chia khách hàng thành từng nhóm có đặc điểm giống nhau, sau đó chấm điểm từ 0 đến 10. Khách từ 8 điểm trở lên được xếp vào nhóm VIP, nên ưu tiên chăm sóc.
 
-## 📁 Cấu trúc thư mục
+**4. Phân tích quảng cáo Facebook**
+Kết nối với tài khoản quảng cáo và Fanpage để xem chi phí cho mỗi khách hàng, tỷ lệ nhấp, mức độ lặp lại quảng cáo... Hệ thống đưa ra gợi ý tạm dừng chiến dịch kém hoặc tăng ngân sách cho chiến dịch tốt. Mặc định chế độ này chỉ hiển thị gợi ý, không tự thay đổi quảng cáo thật.
 
-```
-├── main.py                 # CLI chạy pipeline (Phase 1/2/3)
-├── start.py / start.bat    # Launcher mở dashboard
-├── ecosystem.config.js     # Cấu hình PM2 (chạy nền)
-├── check_db.py             # Kiểm tra nhanh database
-├── dashboard/              # Flask dashboard + templates HTML
-├── src/
-│   ├── phase1_pipeline/    # Ingest, identity mapping, segmentation
-│   ├── phase2_enrichment/  # FB/Google enrichment, matcher
-│   ├── phase3_scoring/     # Clustering, lead scorer
-│   ├── analytics/          # RFM, unified scorer
-│   ├── ads_engine/         # Facebook Ads + Messenger, optimizer
-│   ├── dashboard/          # Streamlit dashboard
-│   ├── utils/              # File auditor, classifier
-│   └── database.py         # Lớp truy cập DB (SQLAlchemy)
-├── tests/                  # Pytest + script sinh dữ liệu mẫu
-└── data/                   # (trống – dữ liệu local, không commit)
-```
+**5. Giao diện xem kết quả**
+Có hai trang dashboard chạy trên trình duyệt:
+- Trang chính (cổng 5000): danh sách khách hàng, hồ sơ chi tiết, quản lý quảng cáo.
+- Trang phân tích (cổng 8502): tình trạng dữ liệu, các nhóm khách hàng, hồ sơ tổng hợp.
 
-## 🚀 Cài đặt
+## Cài đặt
 
-**Yêu cầu:** Python 3.10+
+Cần có Python 3.10 trở lên.
 
 ```bash
 git clone https://github.com/leozuki/bigdata-platform.git
 cd bigdata-platform
 
 python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
+.venv\Scripts\activate          # Trên macOS/Linux: source .venv/bin/activate
 
 pip install -r requirements.txt
-pip install streamlit        # nếu dùng dashboard Streamlit
-
-cp .env.example .env         # Windows: copy .env.example .env
+pip install streamlit
 ```
 
-Sau đó mở `.env` và điền các giá trị cần thiết (xem mục **Cấu hình**).
-
-## ⚙️ Cấu hình (`.env`)
-
-| Biến | Ý nghĩa |
-|---|---|
-| `DATABASE_URL` | Mặc định SQLite; hỗ trợ PostgreSQL |
-| `RAW_DATA_DIR`, `PROCESSED_DATA_DIR` | Thư mục chứa dữ liệu thô / đã xử lý |
-| `GOOGLE_API_KEY`, `GOOGLE_CSE_ID` | Google Custom Search (Phase 2) |
-| `META_APP_ID`, `META_APP_SECRET`, `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID` | Facebook Marketing & Messenger API |
-| `ADS_DRY_RUN` | `true` = chỉ xem trước hành động, **không** thay đổi quảng cáo thật |
-| `ADS_MOCK_MODE` | `true` = dùng dữ liệu giả, không cần API key |
-| `RULE_*`, `BENCH_*` | Ngưỡng tối ưu & benchmark chi phí (VND) |
-
-> [!WARNING]
-> Không bao giờ commit file `.env`. Nên để `ADS_DRY_RUN=true` cho tới khi đã kiểm tra kỹ các đề xuất của optimizer.
-
-## ▶️ Sử dụng
-
-### Chạy pipeline
+Tiếp theo, tạo file cấu hình từ file mẫu:
 
 ```bash
-python main.py --phase all                       # Chạy cả 3 giai đoạn
-python main.py --phase 1 --raw-dir D:/MyData     # Chỉ ingest từ thư mục chỉ định
-python main.py --phase 2 --fb-csv fb_export.csv  # Enrichment từ file FB scraper
-python main.py --phase 3                         # Chỉ phân cụm + chấm điểm
+copy .env.example .env          # Trên macOS/Linux: cp .env.example .env
 ```
 
-| Tham số | Mô tả |
-|---|---|
-| `--phase` | `1` \| `2` \| `3` \| `all` |
-| `--raw-dir` | Thư mục chứa Excel/CSV thô |
-| `--fb-csv` | File CSV export từ tool scraping Facebook |
-| `--uid-mapping` | File CSV map SĐT → Facebook UID |
-| `--google-queries` | Danh sách query, phân cách bằng `\|` |
+Mở file `.env` và điền thông tin của bạn. Các mục chính:
 
-### Mở dashboard
+- `DATABASE_URL`: nơi lưu dữ liệu. Mặc định dùng SQLite, không cần cài thêm gì.
+- `RAW_DATA_DIR`: thư mục chứa các file Excel/CSV gốc.
+- `GOOGLE_API_KEY`, `GOOGLE_CSE_ID`: cần nếu muốn tìm thêm thông tin trên Google.
+- `META_...`: thông tin ứng dụng, tài khoản quảng cáo và Fanpage Facebook.
+- `ADS_DRY_RUN=true`: chỉ xem gợi ý, không thay đổi quảng cáo thật. Nên giữ nguyên cho đến khi đã kiểm tra kỹ.
+- `ADS_MOCK_MODE=true`: dùng dữ liệu giả, tiện để chạy thử khi chưa có tài khoản Facebook.
+
+File `.env` chứa mật khẩu và khoá truy cập nên đã được loại khỏi Git. Đừng chia sẻ file này.
+
+## Cách dùng
+
+**Xử lý dữ liệu**
 
 ```bash
-python start.py              # Flask       → http://localhost:5000
-python start.py --streamlit  # Streamlit   → http://localhost:8502
-python start.py --both       # Chạy cả hai
-python start.py --pipeline   # Chạy Phase 1 rồi mở Flask
+python main.py                                  # Chạy toàn bộ các bước
+python main.py --phase 1 --raw-dir D:/DuLieu    # Chỉ gom và làm sạch dữ liệu
+python main.py --phase 2 --fb-csv facebook.csv  # Chỉ bổ sung thông tin
+python main.py --phase 3                        # Chỉ chấm điểm khách hàng
 ```
 
-Trên Windows có thể nhấp đúp `start.bat`. Để chạy nền bằng PM2: `pm2 start ecosystem.config.js`.
-
-### Dùng thử không cần dữ liệu thật
+**Mở giao diện**
 
 ```bash
-python tests/generate_sample_data.py   # Sinh dữ liệu mẫu giả lập
+python start.py               # Trang chính: http://localhost:5000
+python start.py --streamlit   # Trang phân tích: http://localhost:8502
+python start.py --both        # Mở cả hai
+```
+
+Trên Windows có thể nhấp đúp vào `start.bat` thay cho lệnh trên.
+
+**Chạy thử với dữ liệu mẫu**
+
+Nếu chưa có dữ liệu thật, có thể tạo dữ liệu giả để thử:
+
+```bash
+python tests/generate_sample_data.py
 pytest tests/
 ```
 
-## 🔒 Bảo mật & sử dụng có trách nhiệm
+## Cấu trúc thư mục
 
-- Hệ thống xử lý **dữ liệu cá nhân** (SĐT, tên, hồ sơ mạng xã hội). Chỉ sử dụng với dữ liệu bạn có quyền hợp pháp thu thập và xử lý, tuân thủ **Nghị định 13/2023/NĐ-CP** về bảo vệ dữ liệu cá nhân và điều khoản của Meta/Google.
-- Giữ toàn bộ dữ liệu trong `data/` (đã được `.gitignore` chặn); không đưa dữ liệu khách hàng lên repo công khai.
-- Lưu API key/token trong `.env`, không viết thẳng vào code.
+```
+main.py               Chạy các bước xử lý dữ liệu
+start.py, start.bat   Mở giao diện dashboard
+dashboard/            Trang dashboard chính (Flask)
+src/
+  phase1_pipeline/    Gom, làm sạch, ghép số điện thoại với Facebook
+  phase2_enrichment/  Bổ sung thông tin từ Facebook và Google
+  phase3_scoring/     Phân nhóm và chấm điểm khách hàng
+  analytics/          Các mô hình phân tích khách hàng
+  ads_engine/         Phân tích và tối ưu quảng cáo Facebook
+  dashboard/          Trang phân tích (Streamlit)
+tests/                Kiểm thử và tạo dữ liệu mẫu
+data/                 Để trống, dùng chứa dữ liệu trên máy của bạn
+```
 
-## 🛠️ Công nghệ
+## Về dữ liệu cá nhân
 
-Python · pandas · Dask · scikit-learn · SQLAlchemy · Flask · Streamlit · facebook-business SDK · APScheduler · BeautifulSoup · pytest
+Hệ thống này làm việc với thông tin cá nhân như số điện thoại, họ tên, tài khoản mạng xã hội. Khi sử dụng, vui lòng:
+
+- Chỉ xử lý dữ liệu mà bạn có quyền thu thập và sử dụng hợp pháp, tuân thủ Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.
+- Tuân thủ điều khoản sử dụng của Facebook và Google.
+- Giữ dữ liệu trong thư mục `data/` trên máy. Thư mục này đã được cấu hình để không bị đưa lên GitHub.
+
+## Công nghệ sử dụng
+
+Python, pandas, scikit-learn, SQLAlchemy, Flask, Streamlit, Facebook Business SDK.
