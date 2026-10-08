@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads Scoring — BĐS Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  :root{--bg:#0a0f1e;--bg2:#111827;--surface:rgba(255,255,255,.05);--border:rgba(255,255,255,.08);--primary:#6366f1;--gold:#f59e0b;--green:#10b981;--red:#ef4444;--orange:#f97316;--text:#f1f5f9;--text-muted:#94a3b8;--radius:16px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(99,102,241,.12) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 80%,rgba(245,158,11,.08) 0%,transparent 60%);pointer-events:none}
+  .wrapper{position:relative;z-index:1}
+  nav{background:#161b22;border-bottom:1px solid rgba(255,255,255,.08);padding:0 24px;display:flex;align-items:center;gap:12px;height:56px;position:sticky;top:0;z-index:100}
+  .nav-logo{font-size:17px;font-weight:800;background:linear-gradient(135deg,#6366f1,#f59e0b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-right:4px;white-space:nowrap}
+  nav a{color:#94a3b8;text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;transition:all .2s;white-space:nowrap}
+  nav a:hover,nav a.active{color:#e6edf3;background:#21262d}
+  nav a.active{color:#6366f1}
+  nav .nav-div{width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 4px}
+  nav .nav-badge{background:#1877f2;color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;margin-left:3px}
+  nav .nav-badge.new{background:#3fb950}
+  main{max-width:1400px;margin:0 auto;padding:32px 24px}
+  h1{font-size:28px;font-weight:800;margin-bottom:8px}
+  .sub{color:var(--text-muted);font-size:14px;margin-bottom:28px}
+
+  /* Filters */
+  .filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+  .filter-label{font-size:13px;color:var(--text-muted)}
+  select,input[type=range]{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:8px 14px;font-size:13px;outline:none}
+  select option{background:#1e293b}
+  .score-display{font-size:13px;font-weight:700;color:var(--gold);min-width:30px}
+
+  /* Table */
+  .table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:rgba(99,102,241,.15);padding:14px 16px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);white-space:nowrap}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+  tbody tr:hover{background:rgba(255,255,255,.03)}
+  tbody td{padding:12px 16px;color:var(--text-muted)}
+  tbody td:first-child{color:var(--text);font-weight:500}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+  .badge-vip{background:rgba(245,158,11,.2);color:#fbbf24}
+  .badge-othuc{background:rgba(16,185,129,.2);color:#34d399}
+  .badge-dauco{background:rgba(99,102,241,.2);color:#818cf8}
+  .badge-unknown{background:rgba(148,163,184,.1);color:var(--text-muted)}
+
+  /* Score bar */
+  .score-bar-wrap{display:flex;align-items:center;gap:8px;min-width:100px}
+  .score-bar{height:6px;border-radius:3px;flex:1;background:var(--border)}
+  .score-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+  .score-num{font-size:12px;font-weight:700;min-width:26px;text-align:right}
+
+  /* Pagination */
+  .pagination{display:flex;align-items:center;gap:8px;margin-top:20px;justify-content:center}
+  .page-btn{padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:13px;transition:all .2s}
+  .page-btn:hover:not(:disabled){background:var(--primary);border-color:var(--primary)}
+  .page-btn:disabled{opacity:.4;cursor:not-allowed}
+  .page-info{color:var(--text-muted);font-size:13px}
+
+  .loading{text-align:center;padding:60px;color:var(--text-muted)}
+  .spinner{display:inline-block;width:24px;height:24px;border:2px solid rgba(255,255,255,.3);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .empty{text-align:center;padding:60px;color:var(--text-muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <nav>
+    <span class="nav-logo">⚡ BĐS Analytics</span>
+    <span class="nav-div"></span>
+    <a href="/">🏠 Tổng quan</a>
+    <a href="/leads" class="active">🎯 Leads</a>
+    <a href="/clusters">🧠 Clusters</a>
+    <a href="/leads/profile">👤 Profile 360°</a>
+    <span class="nav-div"></span>
+    <a href="/ads">📢 Ads</a>
+    <a href="/ads/optimizer">⚡ Optimizer</a>
+    <a href="/ads/multi-account">🏢 Multi-Account</a>
+    <a href="/ads/content">🎨 Content <span class="nav-badge new">HOT</span></a>
+  </nav>
+
+  <main>
+    <h1>🎯 Lead Scoring</h1>
+    <p class="sub">Danh sách khách hàng được chấm điểm. Điểm 8-10 → ưu tiên giao Sales giỏi nhất.</p>
+
+    <div class="filters">
+      <span class="filter-label">Nhóm KH:</span>
+      <select id="clusterFilter" onchange="loadLeads(1)">
+        <option value="all">Tất cả</option>
+        <option value="2">⭐ VIP</option>
+        <option value="1">🏠 Ở thực</option>
+        <option value="0">📈 Đầu cơ</option>
+      </select>
+      <span class="filter-label">Điểm tối thiểu:</span>
+      <input type="range" id="minScore" min="0" max="9" step="1" value="0" oninput="scoreVal.textContent=this.value;loadLeads(1)">
+      <span class="score-num" id="scoreVal">0</span>
+    </div>
+
+    <div id="tableContainer">
+      <div class="loading"><span class="spinner"></span><br><br>Đang tải...</div>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </main>
+</div>
+
+<script>
+let currentPage = 1;
+const perPage = 50;
+
+function getScoreColor(s) {
+  if (s >= 8) return '#f59e0b';
+  if (s >= 5) return '#f97316';
+  return '#6366f1';
+}
+
+function clusterBadge(label) {
+  if (!label || label === 'Chưa phân') return `<span class="badge badge-unknown">—</span>`;
+  if (label.includes('VIP'))    return `<span class="badge badge-vip">⭐ VIP</span>`;
+  if (label.includes('thực'))   return `<span class="badge badge-othuc">🏠 Ở thực</span>`;
+  return `<span class="badge badge-dauco">📈 Đầu cơ</span>`;
+}
+
+async function loadLeads(page = 1) {
+  currentPage = page;
+  const cluster   = document.getElementById('clusterFilter').value;
+  const minScore  = document.getElementById('minScore').value;
+
+  document.getElementById('tableContainer').innerHTML = '<div class="loading"><span class="spinner"></span><br><br>Đang tải...</div>';
+
+  const params = new URLSearchParams({ page, per_page: perPage, min_score: minScore });
+  if (cluster !== 'all') params.set('cluster', cluster);
+
+  const r = await fetch('/api/leads?' + params);
+  const d = await r.json();
+
+  if (!d.items || !d.items.length) {
+    document.getElementById('tableContainer').innerHTML = '<div class="empty">Không có dữ liệu. Hãy chạy pipeline trước.</div>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  const rows = d.items.map((p, i) => {
+    const score = p.lead_score;
+    const color = getScoreColor(score);
+    const pct   = (score / 10 * 100).toFixed(0);
+    return `<tr style="cursor:pointer" onclick="window.location='/leads/profile/${p.id}'">
+      <td>${(page-1)*perPage + i + 1}</td>
+      <td><strong>${p.ho_ten || '—'}</strong></td>
+      <td><code style="background:rgba(255,255,255,.08);padding:2px 8px;border-radius:6px;font-size:12px">${p.sdt || '—'}</code></td>
+      <td>${p.fb_uid ? `<span style="color:#818cf8;font-size:12px">✓ ${p.fb_uid.substring(0,10)}...</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td>${p.nguon || '—'}</td>
+      <td>${clusterBadge(p.cluster_label)}</td>
+      <td>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="score-num" style="color:${color}">${score}</div>
+        </div>
+      </td>
+      <td onclick="event.stopPropagation()"><a class="btn-360" href="/leads/profile/${p.id}">👤 360°</a></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableContainer').innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Họ Tên</th><th>Số ĐT</th><th>Facebook UID</th>
+          <th>Nguồn</th><th>Nhóm KH</th><th>Điểm</th><th>Profile</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  const totalPages = Math.ceil(d.total / perPage);
+  let pages = '';
+  if (totalPages > 1) {
+    pages += `<button class="page-btn" onclick="loadLeads(${page-1})" ${page<=1?'disabled':''}>‹ Trước</button>`;
+    for (let p = Math.max(1, page-2); p <= Math.min(totalPages, page+2); p++) {
+      pages += `<button class="page-btn" onclick="loadLeads(${p})" style="${p===page?'background:var(--primary);border-color:var(--primary)':''}">${p}</button>`;
+    }
+    pages += `<button class="page-btn" onclick="loadLeads(${page+1})" ${page>=totalPages?'disabled':''}>Sau ›</button>`;
+    pages += `<span class="page-info">Tổng ${d.total.toLocaleString('vi-VN')} KH</span>`;
+  }
+  document.getElementById('pagination').innerHTML = pages;
+}
+
+loadLeads(1);
+</script>
+</body>
+</html>

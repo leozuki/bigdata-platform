@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Ads Dashboard — BDS Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#1877f2;--green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;--teal:#39d353;--r:12px}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100}
+    nav .logo{font-size:17px;font-weight:700;color:var(--accent)}
+    nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;transition:all .2s}
+    nav a:hover,nav a.active{color:var(--text);background:var(--bg3)}
+    nav .badge{background:var(--accent);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;margin-left:3px}
+    .nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+    .mock-tag{font-size:11px;color:var(--yellow);background:rgba(210,153,34,.15);padding:3px 8px;border-radius:20px;border:1px solid rgba(210,153,34,.3)}
+    .container{max-width:1400px;margin:0 auto;padding:24px}
+    h1{font-size:24px;font-weight:700;margin-bottom:4px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+    .controls{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;align-items:center}
+    select,button{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 13px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s}
+    button:hover,select:hover{border-color:var(--accent)}
+    .btn-p{background:var(--accent);border-color:var(--accent);font-weight:600}
+    .btn-p:hover{background:#1464d8}
+    .btn-s{background:var(--green);border-color:var(--green);color:#0d1117;font-weight:600}
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px;margin-bottom:22px}
+    .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:transform .2s}
+    .kpi:hover{transform:translateY(-2px)}
+    .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .kpi.bl::before{background:var(--accent)}.kpi.gr::before{background:var(--green)}.kpi.ye::before{background:var(--yellow)}.kpi.pu::before{background:var(--purple)}.kpi.re::before{background:var(--red)}.kpi.te::before{background:var(--teal)}
+    .kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+    .kpi-val{font-size:26px;font-weight:700;line-height:1}
+    .kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+    .sec-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:18px}
+    @media(max-width:900px){.sec-grid{grid-template-columns:1fr}}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
+    .ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .ch h3{font-size:14px;font-weight:600}
+    .cb{padding:18px}
+    .chart-box{position:relative;height:230px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:var(--bg3);color:var(--muted);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:.5px;padding:9px 11px;text-align:left;position:sticky;top:0}
+    td{padding:9px 11px;border-bottom:1px solid var(--border)}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,.025)}
+    .tw{overflow-x:auto;max-height:400px;overflow-y:auto}
+    .tabs{display:flex;gap:2px;padding:14px 18px 0;border-bottom:1px solid var(--border)}
+    .tab{padding:7px 14px;border-radius:8px 8px 0 0;font-size:12px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s}
+    .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+    .tc{display:none;padding:18px}.tc.active{display:block}
+    .bg{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3);padding:2px 7px;border-radius:10px;font-size:11px}
+    .bm{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.3);padding:2px 7px;border-radius:10px;font-size:11px}
+    .bp{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3);padding:2px 7px;border-radius:10px;font-size:11px}
+    .ba{background:rgba(63,185,80,.15);color:var(--green);border-radius:10px;padding:2px 7px;font-size:11px}
+    .bpa{background:rgba(139,148,158,.15);color:var(--muted);border-radius:10px;padding:2px 7px;font-size:11px}
+    .qg{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .qc{border:1px solid var(--border);border-radius:8px;padding:11px;font-size:12px}
+    .qc .ql{font-size:10px;font-weight:600;text-transform:uppercase;margin-bottom:5px}
+    .qc .qi{padding:3px 0;border-bottom:1px solid var(--border);color:var(--muted)}
+    .qc .qi:last-child{border:none}
+    .qs{border-color:var(--green);background:rgba(63,185,80,.04)}.qo{border-color:var(--yellow);background:rgba(210,153,34,.04)}.qt{border-color:rgba(139,148,158,.3)}.qp{border-color:var(--red);background:rgba(248,81,73,.04)}
+    .sp{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ld{color:var(--muted);font-size:13px;padding:30px;text-align:center}
+    .rcard{background:var(--bg3);border-radius:8px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+    .rcard-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;margin-top:8px}
+    .rlb{color:var(--muted);font-size:11px}
+    .achip{font-size:10px;padding:2px 7px;border-radius:4px;display:inline-block;margin:2px}
+    .ac-c{background:rgba(248,81,73,.15);color:var(--red)}.ac-w{background:rgba(210,153,34,.15);color:var(--yellow)}
+    .br{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+    .br:last-child{border:none}.bl-lbl{width:100px;color:var(--muted)}.bl-bw{flex:1;background:var(--bg3);border-radius:3px;height:5px}.bl-b{height:5px;border-radius:3px}.bl-val{width:90px;text-align:right}
+  </style>
+</head>
+<body>
+<nav>
+  <span class="logo">⚡ BĐS Analytics</span>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/">🏠 Tổng quan</a>
+  <a href="/leads">🎯 Leads</a>
+  <a href="/clusters">🧠 Clusters</a>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/ads" class="active">📢 Ads</a>
+  <a href="/ads/optimizer">⚡ Optimizer</a>
+  <a href="/ads/multi-account">🏢 Multi-Account</a>
+  <a href="/ads/content">🎨 Content <span class="badge" style="background:var(--green)">HOT</span></a>
+  <div class="nav-right">
+    <span class="mock-tag" id="modeTag">⚠️ MOCK MODE</span>
+    <button onclick="syncData()" id="syncBtn">🔄 Sync Meta</button>
+    <button class="btn-s" onclick="window.location='/ads/optimizer'">⚡ Optimizer</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div><h1>📢 Facebook Ads Dashboard</h1><p class="sub">Phân tích sâu hiệu suất ads · Chất lượng lead · Đề xuất tối ưu</p></div>
+
+  <div class="controls">
+    <select id="datePreset" onchange="loadAll()">
+      <option value="last_7d">7 ngày qua</option>
+      <option value="last_14d">14 ngày</option>
+      <option value="last_30d">30 ngày</option>
+    </select>
+    <button class="btn-p" onclick="loadAll()">🔍 Phân tích</button>
+    <button onclick="window.location='/ads/optimizer'">⚡ Mở Optimizer →</button>
+  </div>
+
+  <div class="kpi-grid" id="kpiGrid"><div class="ld"><span class="sp"></span>Đang tải...</div></div>
+
+  <div class="sec-grid">
+    <div class="card">
+      <div class="ch"><h3>📈 Xu hướng CPL & Chi tiêu</h3>
+        <select id="campSel" onchange="loadChart()" style="font-size:11px;padding:3px 7px;"></select>
+      </div>
+      <div class="cb"><div class="chart-box"><canvas id="cplChart"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>🎯 Ma trận Quality vs Cost</h3></div>
+      <div class="cb">
+        <div class="qg" id="quadGrid">
+          <div class="qc qs"><div class="ql">🟢 Nhân rộng</div><div class="ld" style="padding:8px;font-size:11px">...</div></div>
+          <div class="qc qo"><div class="ql">🟡 Tối ưu targeting</div><div class="ld" style="padding:8px;font-size:11px">...</div></div>
+          <div class="qc qt"><div class="ql">🟡 Test creative</div><div class="ld" style="padding:8px;font-size:11px">...</div></div>
+          <div class="qc qp"><div class="ql">🔴 Nên dừng</div><div class="ld" style="padding:8px;font-size:11px">...</div></div>
+        </div>
+        <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px">CPL ≤ 200k & Quality ≥ 6 = Winner</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="stab('campaigns',this)">🗂️ Campaigns</div>
+      <div class="tab" onclick="stab('messenger',this)">💬 Messenger Leads</div>
+      <div class="tab" onclick="stab('benchmarks',this)">📏 Benchmarks</div>
+      <div class="tab" onclick="stab('alerts',this)">🚨 Alerts</div>
+    </div>
+
+    <div class="tc active" id="tab-campaigns">
+      <div class="tw"><table>
+        <thead><tr><th>Campaign</th><th>Trạng thái</th><th>Chi tiêu</th><th>Leads</th><th>CPL</th><th>CTR</th><th>Frequency</th><th>Quality</th><th>Alerts</th></tr></thead>
+        <tbody id="campTb"><tr><td colspan="9" class="ld"><span class="sp"></span>Đang tải...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <div class="tc" id="tab-messenger">
+      <div class="tw"><table>
+        <thead><tr><th>Tên khách</th><th>Ad ID</th><th>SĐT</th><th>Tin nhắn</th><th>Intent</th><th>Quality</th><th>Cập nhật</th></tr></thead>
+        <tbody id="messTb"><tr><td colspan="7" class="ld"><span class="sp"></span>Đang tải...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <div class="tc" id="tab-benchmarks">
+      <div id="benchRows" style="max-width:580px"><div class="ld"><span class="sp"></span>Đang tải...</div></div>
+    </div>
+
+    <div class="tc" id="tab-alerts">
+      <div id="alertsDiv" class="ld"><span class="sp"></span>Đang tải...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><h3>🏆 Đề xuất nhân rộng campaign</h3>
+      <button class="btn-s" onclick="window.location='/ads/optimizer'" style="font-size:12px;padding:5px 10px">Apply →</button>
+    </div>
+    <div class="cb"><div id="recList" class="ld"><span class="sp"></span>Đang tải...</div></div>
+  </div>
+</div>
+
+<script>
+let campData=[], chartInst=null;
+const api=url=>fetch(url).then(r=>r.json());
+const fv=n=>!n?'0đ':n>=1e6?(n/1e6).toFixed(1)+'tr':n>=1000?Math.round(n/1000)+'k':Math.round(n)+'đ';
+const rc=(r)=>r?`b${r[0]}`:'bm';
+const bclass=(r)=>r==='good'?'bg':r==='poor'?'bp':'bm';
+const sc=(s)=>s>=7?'bg':s>=4?'bm':'bp';
+
+async function loadAll(){
+  const p=document.getElementById('datePreset').value;
+  await Promise.all([loadCampaigns(p),loadMessengerLeads(),loadRec()]);
+}
+
+async function loadCampaigns(p='last_7d'){
+  document.getElementById('campTb').innerHTML='<tr><td colspan="9" class="ld"><span class="sp"></span>Carregando...</td></tr>';
+  const d=await api(`/api/ads/campaigns?date_preset=${p}`);
+  campData=d.campaigns||[];
+  renderKPIs(d);
+  renderCampTable(campData);
+  renderAlerts(campData);
+  const sel=document.getElementById('campSel');
+  sel.innerHTML=campData.map(c=>`<option value="${c.campaign_id}">${c.campaign_name?.substring(0,28)}</option>`).join('');
+  await loadChart();
+}
+
+function renderKPIs(d){
+  const camps=d.campaigns||[];
+  const good=camps.filter(c=>c.ratings?.cpl==='good').length;
+  const poor=camps.filter(c=>c.ratings?.cpl==='poor').length;
+  const avgQ=camps.length?camps.reduce((s,c)=>s+(c.avg_quality||0),0)/camps.length:0;
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi bl"><div class="kpi-lbl">💰 Tổng chi tiêu</div><div class="kpi-val">${fv(d.total_spend||0)}</div><div class="kpi-sub">7 ngày</div></div>
+    <div class="kpi gr"><div class="kpi-lbl">🎯 Tổng leads</div><div class="kpi-val">${(d.total_leads||0).toLocaleString()}</div><div class="kpi-sub">Tất cả campaigns</div></div>
+    <div class="kpi ye"><div class="kpi-lbl">📊 CPL TB</div><div class="kpi-val">${fv(d.overall_cpl||0)}</div><div class="kpi-sub">Tốt &lt;150k</div></div>
+    <div class="kpi pu"><div class="kpi-lbl">⭐ Quality TB</div><div class="kpi-val">${avgQ.toFixed(1)}</div><div class="kpi-sub">Max 10</div></div>
+    <div class="kpi te"><div class="kpi-lbl">✅ Campaigns tốt</div><div class="kpi-val">${good}/${camps.length}</div><div class="kpi-sub">CPL đạt chuẩn</div></div>
+    <div class="kpi re"><div class="kpi-lbl">⚠️ Cần optimize</div><div class="kpi-val">${poor}/${camps.length}</div><div class="kpi-sub">CPL vượt ngưỡng</div></div>
+  `;
+}
+
+function renderCampTable(camps){
+  const tb=document.getElementById('campTb');
+  if(!camps.length){tb.innerHTML='<tr><td colspan="9" class="ld">Không có dữ liệu</td></tr>';return;}
+  tb.innerHTML=camps.map(c=>`<tr>
+    <td><strong style="font-size:12px">${c.campaign_name}</strong><br><span style="color:var(--muted);font-size:10px">${c.campaign_id}</span></td>
+    <td><span class="${c.status==='ACTIVE'?'ba':'bpa'}">${c.status}</span></td>
+    <td>${fv(c.total_spend||0)}</td><td>${(c.total_leads||0).toLocaleString()}</td>
+    <td><span class="${bclass(c.ratings?.cpl)}">${fv(c.cpl||0)}</span></td>
+    <td><span class="${bclass(c.ratings?.ctr)}">${(c.ctr||0).toFixed(2)}%</span></td>
+    <td><span class="${bclass(c.ratings?.frequency)}">${(c.frequency||0).toFixed(1)}x</span></td>
+    <td>${(c.avg_quality||0).toFixed(1)}/10</td>
+    <td>${(c.alerts||[]).length?`<span class="achip ac-c">⚠️ ${c.alerts.length}</span>`:'<span style="color:var(--green)">✓</span>'}</td>
+  </tr>`).join('');
+}
+
+async function loadChart(){
+  const cid=document.getElementById('campSel').value;
+  const p=document.getElementById('datePreset').value;
+  if(!cid)return;
+  const d=await api(`/api/ads/performance?campaign_id=${cid}&date_preset=${p}`);
+  const ctx=document.getElementById('cplChart').getContext('2d');
+  if(chartInst)chartInst.destroy();
+  chartInst=new Chart(ctx,{
+    data:{labels:d.labels||[],datasets:[
+      {type:'bar',label:'Chi tiêu(đ)',data:d.spend||[],backgroundColor:'rgba(24,119,242,.3)',borderColor:'rgba(24,119,242,.7)',borderWidth:1,yAxisID:'y'},
+      {type:'line',label:'CPL(đ)',data:d.cpl||[],borderColor:'#f85149',borderWidth:2,tension:.3,pointRadius:4,yAxisID:'y',fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:9}},grid:{color:'#21262d'}},y:{ticks:{color:'#8b949e',font:{size:9},callback:v=>fv(v)},grid:{color:'#21262d'}}}}
+  });
+}
+
+async function loadMessengerLeads(){
+  document.getElementById('messTb').innerHTML='<tr><td colspan="7" class="ld"><span class="sp"></span>Đang tải...</td></tr>';
+  const d=await api('/api/ads/messenger-leads');
+  const items=d.items||[];
+  const tb=document.getElementById('messTb');
+  if(!items.length){tb.innerHTML='<tr><td colspan="7" class="ld">Chưa có dữ liệu</td></tr>';return;}
+  tb.innerHTML=items.map(l=>`<tr>
+    <td><strong>${l.sender_name||'—'}</strong></td>
+    <td><span style="font-family:monospace;font-size:10px;color:var(--muted)">${l.fb_ad_id||'N/A'}</span></td>
+    <td>${l.phone||'—'}</td><td>${l.message_count}x</td>
+    <td><span class="${sc(l.intent_score)}">${(+l.intent_score).toFixed(1)}</span></td>
+    <td><span class="${sc(l.quality_score)}">${(+l.quality_score).toFixed(1)}</span></td>
+    <td style="color:var(--muted);font-size:10px">${l.last_message_at?new Date(l.last_message_at).toLocaleString('vi-VN'):'—'}</td>
+  </tr>`).join('');
+}
+
+async function loadRec(){
+  const d=await api('/api/ads/recommendations');
+  const plans=d.scale_up_plans||[];
+  const mat=d.all_campaigns_matrix||[];
+  const q={SCALE_UP:[],OPTIMIZE_TARGETING:[],TEST_CREATIVE:[],PAUSE:[]};
+  mat.forEach(m=>q[m.quadrant]?.push(m));
+  const qg=document.getElementById('quadGrid');
+  const qi=(arr)=>arr.length?arr.map(m=>`<div class="qi">${(m.campaign_name||m.campaign_id).substring(0,26)}</div>`).join(''):'<div class="qi" style="color:var(--muted)">Chưa có</div>';
+  qg.innerHTML=`
+    <div class="qc qs"><div class="ql">🟢 Nhân rộng(${q.SCALE_UP.length})</div>${qi(q.SCALE_UP)}</div>
+    <div class="qc qo"><div class="ql">🟡 Tối ưu(${q.OPTIMIZE_TARGETING.length})</div>${qi(q.OPTIMIZE_TARGETING)}</div>
+    <div class="qc qt"><div class="ql">🟡 Test creative(${q.TEST_CREATIVE.length})</div>${qi(q.TEST_CREATIVE)}</div>
+    <div class="qc qp"><div class="ql">🔴 Dừng(${q.PAUSE.length})</div>${qi(q.PAUSE)}</div>
+  `;
+  const rd=document.getElementById('recList');
+  if(!plans.length){rd.innerHTML='<p style="color:var(--muted)">Chưa có campaign đủ điều kiện nhân rộng.</p>';return;}
+  rd.innerHTML=plans.map(p=>`
+    <div class="rcard"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong>${p.campaign_name}</strong>
+      <span class="bg" style="font-size:11px">${p.recommendation?.rationale||''}</span>
+    </div>
+    <div class="rcard-row">
+      <div><div class="rlb">CPL hiện tại</div><strong>${fv(p.current_metrics?.cpl||0)}</strong></div>
+      <div><div class="rlb">Quality Score</div><strong>${(p.current_metrics?.avg_quality||0).toFixed(1)}/10</strong></div>
+      <div><div class="rlb">Leads dự kiến</div><strong style="color:var(--green)">${p.expected_outcome?.leads_7d||0} leads</strong></div>
+    </div></div>
+  `).join('');
+  loadBenchmarks(d);
+}
+
+async function loadBenchmarks(rptData){
+  const d=rptData||await api('/api/ads/cost-report?date_preset='+document.getElementById('datePreset').value);
+  const b=d.benchmarks||{};
+  const camps=d.campaigns||[];
+  const avgs={cpl:0,cpm:0,ctr:0,frequency:0,conv_rate:0};
+  camps.forEach(c=>Object.keys(avgs).forEach(k=>avgs[k]+=(c[k]||0)));
+  const n=camps.length||1;
+  Object.keys(avgs).forEach(k=>avgs[k]=avgs[k]/n);
+  const meta=[
+    {k:'cpl',l:'CPL',f:v=>fv(v),hi:false},
+    {k:'cpm',l:'CPM',f:v=>fv(v),hi:false},
+    {k:'ctr',l:'CTR',f:v=>v.toFixed(2)+'%',hi:true},
+    {k:'frequency',l:'Frequency',f:v=>v.toFixed(1)+'x',hi:false},
+    {k:'conv_rate',l:'Conv Rate',f:v=>v.toFixed(1)+'%',hi:true},
+  ];
+  document.getElementById('benchRows').innerHTML=meta.map(m=>{
+    const g=b[m.k]?.good||1,med=b[m.k]?.medium||1,a=avgs[m.k]||0;
+    const isg=m.hi?a>=g:a<=g,ism=m.hi?a>=med&&a<g:a>g&&a<=med;
+    const cls=isg?'good':ism?'medium':'poor';
+    const clr=cls==='good'?'var(--green)':cls==='medium'?'var(--yellow)':'var(--red)';
+    const pct=Math.min(100,m.hi?(a/(g*1.5)*100):((med*2-a)/(med*2)*100));
+    return `<div class="br">
+      <div class="bl-lbl">${m.l}</div>
+      <div style="flex:1"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Tốt:${m.f(g)} | Trung bình:${m.f(med)}</div>
+        <div class="bl-bw"><div class="bl-b" style="width:${Math.max(0,pct)}%;background:${clr}"></div></div></div>
+      <div class="bl-val"><span class="${bclass(cls)}">${m.f(Math.round(a))}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlerts(camps){
+  const all=camps.flatMap(c=>(c.alerts||[]).map(a=>({...a,camp:c.campaign_name})));
+  const div=document.getElementById('alertsDiv');
+  if(!all.length){div.innerHTML='<p style="color:var(--green)">✅ Không có alerts</p>';return;}
+  div.innerHTML=all.map(a=>`<div style="padding:9px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start">
+    <span class="achip ${a.severity==='critical'?'ac-c':'ac-w'}">${a.severity==='critical'?'🔴':'🟡'} ${a.type}</span>
+    <div><div style="font-size:12px;font-weight:500">${a.camp}</div><div style="font-size:11px;color:var(--muted)">${a.message}</div></div>
+  </div>`).join('');
+}
+
+async function syncData(){
+  const b=document.getElementById('syncBtn');
+  b.innerHTML='<span class="sp"></span>Syncing...';b.disabled=true;
+  try{const r=await fetch('/api/ads/sync',{method:'POST'});const d=await r.json();
+    alert(d.success?`✅ Sync xong: ${d.messenger?.synced||0} leads`:'❌ '+(d.error||'Lỗi'));loadAll();
+  }finally{b.innerHTML='🔄 Sync Meta';b.disabled=false;}
+}
+
+function stab(n,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+n).classList.add('active');
+}
+
+loadAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Ads Optimizer — BDS Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#1877f2;--green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;--r:12px}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100}
+    nav .logo{font-size:17px;font-weight:700;color:var(--accent)}
+    nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;transition:all .2s}
+    nav a:hover,nav a.active{color:var(--text);background:var(--bg3)}
+    nav .badge{background:var(--accent);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;margin-left:3px}
+    .nr{margin-left:auto;display:flex;align-items:center;gap:10px}
+    .dry-tag{font-size:11px;color:var(--yellow);background:rgba(210,153,34,.15);padding:3px 8px;border-radius:16px;border:1px solid rgba(210,153,34,.3)}
+    .live-tag{font-size:11px;color:var(--green);background:rgba(63,185,80,.15);padding:3px 8px;border-radius:16px;border:1px solid rgba(63,185,80,.3)}
+    .container{max-width:1300px;margin:0 auto;padding:24px}
+    h1{font-size:24px;font-weight:700;margin-bottom:4px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+    .controls{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;align-items:center}
+    select,button{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 13px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s}
+    button:hover,select:hover{border-color:var(--accent)}
+    .btn-p{background:var(--accent);border-color:var(--accent);font-weight:600}.btn-p:hover{background:#1464d8}
+    .btn-g{background:var(--green);border-color:var(--green);color:#0d1117;font-weight:600}
+    .btn-r{background:var(--red);border-color:var(--red);color:#fff}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+    @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
+    .ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .ch h3{font-size:14px;font-weight:600}
+    .cb{padding:18px}
+    /* Toggle */
+    .toggle-wrap{display:flex;align-items:center;gap:10px;font-size:13px}
+    .toggle{position:relative;width:44px;height:24px;cursor:pointer}
+    .toggle input{opacity:0;width:0;height:0}
+    .slider{position:absolute;inset:0;background:var(--bg3);border-radius:12px;transition:.3s;border:1px solid var(--border)}
+    .slider:before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.3s}
+    .toggle input:checked+.slider{background:var(--red)}
+    .toggle input:checked+.slider:before{transform:translateX(20px);background:#fff}
+    /* Action cards */
+    .action-list{display:flex;flex-direction:column;gap:10px}
+    .ac{background:var(--bg3);border-radius:10px;border:1px solid var(--border);padding:14px;display:flex;align-items:flex-start;gap:12px;transition:border-color .2s}
+    .ac:hover{border-color:rgba(255,255,255,.15)}
+    .ac-check{width:18px;height:18px;border:1px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:2px;cursor:pointer;accent-color:var(--accent)}
+    .ac-icon{font-size:20px;flex-shrink:0}
+    .ac-body{flex:1}
+    .ac-rule{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+    .ac-title{font-size:13px;font-weight:500;margin-bottom:3px}
+    .ac-sub{font-size:11px;color:var(--muted)}
+    .ac-metrics{display:flex;gap:12px;margin-top:8px;font-size:11px;flex-wrap:wrap}
+    .ac-met{background:var(--bg2);border:1px solid var(--border);padding:3px 8px;border-radius:6px}
+    .ac-impact{font-size:11px;padding:4px 10px;border-radius:16px;margin-top:6px;display:inline-block}
+    .ac-status{font-size:10px;padding:2px 8px;border-radius:10px;flex-shrink:0;margin-top:2px}
+    /* rule colors */
+    .rule-PAUSE      .ac-rule{color:var(--red)}.rule-PAUSE      .ac-icon::before{content:'⏸️'}
+    .rule-SCALE      .ac-rule{color:var(--green)}.rule-SCALE      .ac-icon::before{content:'📈'}
+    .rule-TEST_BUDGET .ac-rule{color:var(--yellow)}.rule-TEST_BUDGET .ac-icon::before{content:'🧪'}
+    .rule-FREQ_CAP   .ac-rule{color:var(--yellow)}.rule-FREQ_CAP   .ac-icon::before{content:'🔄'}
+    .rule-WINNER     .ac-rule{color:var(--purple)}.rule-WINNER     .ac-icon::before{content:'🏆'}
+    .impact-PAUSE{background:rgba(248,81,73,.1);color:var(--red)}
+    .impact-SCALE{background:rgba(63,185,80,.1);color:var(--green)}
+    .impact-TEST_BUDGET,.impact-FREQ_CAP{background:rgba(210,153,34,.1);color:var(--yellow)}
+    .impact-WINNER{background:rgba(188,140,255,.1);color:var(--purple)}
+    .status-preview{background:rgba(24,119,242,.15);color:var(--accent)}
+    .status-applied{background:rgba(63,185,80,.15);color:var(--green)}
+    .status-failed{background:rgba(248,81,73,.15);color:var(--red)}
+    /* Summary bar */
+    .sbar{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    .sitem{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+    .sv{font-size:24px;font-weight:700}.sl{font-size:11px;color:var(--muted);margin-top:4px}
+    /* Log table */
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:var(--bg3);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;position:sticky;top:0}
+    td{padding:8px 10px;border-bottom:1px solid var(--border)}
+    tr:last-child td{border:none}tr:hover td{background:rgba(255,255,255,.02)}
+    .tw{overflow-x:auto;max-height:350px;overflow-y:auto}
+    .sp{display:inline-block;width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ld{color:var(--muted);font-size:13px;padding:28px;text-align:center}
+    .empty{color:var(--muted);font-size:13px;text-align:center;padding:24px}
+    .rule-pill{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600}
+    .rp-PAUSE{background:rgba(248,81,73,.15);color:var(--red)}
+    .rp-SCALE{background:rgba(63,185,80,.15);color:var(--green)}
+    .rp-TEST_BUDGET,.rp-FREQ_CAP{background:rgba(210,153,34,.15);color:var(--yellow)}
+    .rp-WINNER{background:rgba(188,140,255,.15);color:var(--purple)}
+    .no-actions{text-align:center;padding:40px;color:var(--muted)}
+    .no-actions .ni{font-size:40px;margin-bottom:12px}
+    .chk-all{font-size:12px;color:var(--muted);cursor:pointer}
+    .chk-all:hover{color:var(--text)}
+  </style>
+</head>
+<body>
+<nav>
+  <span class="logo">⚡ BĐS Analytics</span>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/">🏠 Tổng quan</a><a href="/leads">🎯 Leads</a><a href="/clusters">🧠 Clusters</a>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/ads">📢 Ads</a>
+  <a href="/ads/optimizer" class="active">⚡ Optimizer <span class="badge">AUTO</span></a>
+  <a href="/ads/multi-account">🏢 Multi-Account</a>
+  <a href="/ads/content">🎨 Content</a>
+  <div class="nr">
+    <span id="modeTag" class="dry-tag">🔍 DRY RUN MODE</span>
+    <div class="toggle-wrap">
+      <span style="font-size:12px;color:var(--muted)">Live</span>
+      <label class="toggle"><input type="checkbox" id="liveToggle" onchange="onModeChange()"><div class="slider"></div></label>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div><h1>⚡ Ads Optimizer</h1><p class="sub">Tự động tối ưu ngân sách · Pause yếu · Scale mạnh · Nhân rộng winner</p></div>
+
+  <!-- Summary -->
+  <div class="sbar" id="sbar">
+    <div class="sitem"><div class="sv">—</div><div class="sl">Tổng actions</div></div>
+    <div class="sitem" style="border-color:var(--red)"><div class="sv" style="color:var(--red)">—</div><div class="sl">⏸️ Pause</div></div>
+    <div class="sitem" style="border-color:var(--green)"><div class="sv" style="color:var(--green)">—</div><div class="sl">📈 Scale</div></div>
+    <div class="sitem" style="border-color:var(--yellow)"><div class="sv" style="color:var(--yellow)">—</div><div class="sl">🧪 Test/Cap</div></div>
+    <div class="sitem" style="border-color:var(--purple)"><div class="sv" style="color:var(--purple)">—</div><div class="sl">🏆 Winner</div></div>
+  </div>
+
+  <div class="grid2">
+    <!-- Action Preview -->
+    <div class="card" style="grid-column:1/-1">
+      <div class="ch">
+        <h3>🎬 Preview Actions</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="chk-all" onclick="toggleAll()">☑ Chọn tất cả</span>
+          <button class="btn-p" onclick="runPreview()" id="previewBtn">🔍 Tính toán lại</button>
+          <button class="btn-g" onclick="applySelected()" id="applyBtn" disabled>✅ Apply Selected</button>
+        </div>
+      </div>
+      <div class="cb">
+        <div id="actionList" class="ld"><span class="sp"></span>Đang phân tích...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rules Reference -->
+  <div class="grid2">
+    <div class="card">
+      <div class="ch"><h3>📋 Rules tối ưu</h3></div>
+      <div class="cb">
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
+          <div style="background:var(--bg3);border-radius:8px;padding:12px;border-left:3px solid var(--red)">
+            <strong style="color:var(--red)">⏸️ PAUSE</strong> — CPL &gt; 500k VÀ Quality &lt; 4<br>
+            <span style="color:var(--muted)">Dừng adset lãng phí ngân sách</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:12px;border-left:3px solid var(--green)">
+            <strong style="color:var(--green)">📈 SCALE</strong> — CPL &lt; 150k VÀ Quality ≥ 7<br>
+            <span style="color:var(--muted)">Tăng 50% ngân sách adset hiệu quả</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:12px;border-left:3px solid var(--yellow)">
+            <strong style="color:var(--yellow)">🧪 TEST_BUDGET</strong> — CTR &lt; 1%<br>
+            <span style="color:var(--muted)">Giảm 30% budget, cần A/B test creative</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:12px;border-left:3px solid var(--yellow)">
+            <strong style="color:var(--yellow)">🔄 FREQ_CAP</strong> — Frequency &gt; 3.5x<br>
+            <span style="color:var(--muted)">Pause để refresh creative tránh ad fatigue</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:12px;border-left:3px solid var(--purple)">
+            <strong style="color:var(--purple)">🏆 WINNER</strong> — Quality ≥ 8<br>
+            <span style="color:var(--muted)">Nhân bản adset với budget x2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>⚙️ Ngưỡng chuẩn (configurable via .env)</h3></div>
+      <div class="cb">
+        <table>
+          <thead><tr><th>Rule</th><th>Biến ENV</th><th>Mặc định</th></tr></thead>
+          <tbody>
+            <tr><td>CPL pause</td><td style="font-family:monospace;font-size:10px">RULE_PAUSE_CPL</td><td>500,000đ</td></tr>
+            <tr><td>CPL scale</td><td style="font-family:monospace;font-size:10px">RULE_SCALE_CPL</td><td>150,000đ</td></tr>
+            <tr><td>Quality pause</td><td style="font-family:monospace;font-size:10px">RULE_PAUSE_QUALITY</td><td>4.0</td></tr>
+            <tr><td>Quality scale</td><td style="font-family:monospace;font-size:10px">RULE_SCALE_QUALITY</td><td>7.0</td></tr>
+            <tr><td>Scale factor</td><td style="font-family:monospace;font-size:10px">RULE_SCALE_FACTOR</td><td>1.5 (+50%)</td></tr>
+            <tr><td>CTR poor</td><td style="font-family:monospace;font-size:10px">RULE_CTR_POOR</td><td>1.0%</td></tr>
+            <tr><td>Freq cap</td><td style="font-family:monospace;font-size:10px">RULE_FREQ_CAP</td><td>3.5x</td></tr>
+            <tr><td>Winner quality</td><td style="font-family:monospace;font-size:10px">RULE_WINNER_QUALITY</td><td>8.0</td></tr>
+            <tr><td>Winner budget x</td><td style="font-family:monospace;font-size:10px">RULE_WINNER_BUDGET</td><td>2.0 (x2)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optimization Log -->
+  <div class="card">
+    <div class="ch"><h3>📜 Lịch sử Optimization</h3>
+      <button onclick="loadLog()" style="font-size:12px;padding:5px 10px">🔄 Refresh</button>
+    </div>
+    <div class="cb">
+      <div class="tw"><table id="logTable">
+        <thead><tr><th>Thời gian</th><th>Mode</th><th>Rule</th><th>Action</th><th>AdSet</th><th>Campaign</th><th>Lý do</th><th>Status</th></tr></thead>
+        <tbody id="logTb"><tr><td colspan="8" class="ld"><span class="sp"></span>Đang tải...</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let actions=[], allChecked=false;
+const api=url=>fetch(url).then(r=>r.json());
+const fv=n=>!n?'0đ':n>=1e6?(n/1e6).toFixed(1)+'tr':n>=1000?Math.round(n/1000)+'k':Math.round(n)+'đ';
+
+function onModeChange(){
+  const live=document.getElementById('liveToggle').checked;
+  const tag=document.getElementById('modeTag');
+  const applyBtn=document.getElementById('applyBtn');
+  if(live){
+    tag.className='live-tag';tag.textContent='⚡ LIVE MODE';
+    applyBtn.disabled=false;applyBtn.style.opacity='1';
+  }else{
+    tag.className='dry-tag';tag.textContent='🔍 DRY RUN MODE';
+    applyBtn.disabled=true;applyBtn.style.opacity='.5';
+  }
+}
+
+async function runPreview(){
+  const btn=document.getElementById('previewBtn');
+  btn.innerHTML='<span class="sp"></span>Đang phân tích...';btn.disabled=true;
+  document.getElementById('actionList').innerHTML='<div class="ld"><span class="sp"></span>Đang chạy optimizer...</div>';
+  try{
+    const d=await fetch('/api/ads/optimize/preview',{method:'POST'}).then(r=>r.json());
+    actions=d.actions||[];
+    renderActions(actions);
+    renderSummary(d);
+  }catch(e){
+    document.getElementById('actionList').innerHTML=`<div class="empty">❌ Lỗi: ${e.message}</div>`;
+  }finally{
+    btn.innerHTML='🔍 Tính toán lại';btn.disabled=false;
+  }
+}
+
+function renderSummary(d){
+  const acts=d.actions||[];
+  const count={PAUSE:0,SCALE:0,other:0,WINNER:0};
+  acts.forEach(a=>{
+    if(a.rule==='PAUSE')count.PAUSE++;
+    else if(a.rule==='SCALE')count.SCALE++;
+    else if(a.rule==='WINNER')count.WINNER++;
+    else count.other++;
+  });
+  document.getElementById('sbar').innerHTML=`
+    <div class="sitem"><div class="sv">${acts.length}</div><div class="sl">Tổng actions</div></div>
+    <div class="sitem" style="border-color:var(--red)"><div class="sv" style="color:var(--red)">${count.PAUSE}</div><div class="sl">⏸️ Pause</div></div>
+    <div class="sitem" style="border-color:var(--green)"><div class="sv" style="color:var(--green)">${count.SCALE}</div><div class="sl">📈 Scale</div></div>
+    <div class="sitem" style="border-color:var(--yellow)"><div class="sv" style="color:var(--yellow)">${count.other}</div><div class="sl">🧪 Test/Cap</div></div>
+    <div class="sitem" style="border-color:var(--purple)"><div class="sv" style="color:var(--purple)">${count.WINNER}</div><div class="sl">🏆 Winner</div></div>
+  `;
+}
+
+function renderActions(acts){
+  const div=document.getElementById('actionList');
+  if(!acts.length){
+    div.innerHTML=`<div class="no-actions"><div class="ni">✅</div><p>Tất cả campaigns đang hoạt động trong ngưỡng tối ưu.<br><span style="font-size:12px;color:var(--muted)">Không có action nào cần thực hiện.</span></p></div>`;
+    return;
+  }
+  const icons={PAUSE:'⏸️',SCALE:'📈',TEST_BUDGET:'🧪',FREQ_CAP:'🔄',WINNER:'🏆'};
+  const clrs={PAUSE:'var(--red)',SCALE:'var(--green)',TEST_BUDGET:'var(--yellow)',FREQ_CAP:'var(--yellow)',WINNER:'var(--purple)'};
+  div.innerHTML=`<div class="action-list">${acts.map((a,i)=>{
+    const m=a.metrics||{};
+    return `<div class="ac rule-${a.rule}">
+      <input type="checkbox" class="ac-check" id="chk_${i}" checked>
+      <div class="ac-icon"></div>
+      <div class="ac-body">
+        <div class="ac-rule" style="color:${clrs[a.rule]||'var(--muted)'}">${icons[a.rule]||'•'} Rule: ${a.rule}</div>
+        <div class="ac-title">${a.adset_name}</div>
+        <div class="ac-sub" style="color:var(--muted)">${a.campaign}</div>
+        <div class="ac-metrics">
+          ${m.cpl?`<div class="ac-met">CPL: ${fv(m.cpl)}</div>`:''}
+          ${m.ctr?`<div class="ac-met">CTR: ${(+m.ctr).toFixed(2)}%</div>`:''}
+          ${m.frequency?`<div class="ac-met">Freq: ${(+m.frequency).toFixed(1)}x</div>`:''}
+          ${m.avg_quality?`<div class="ac-met">Quality: ${(+m.avg_quality).toFixed(1)}</div>`:''}
+        </div>
+        <div class="ac-impact impact-${a.rule}">${a.impact||''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${a.reason||''}</div>
+      </div>
+      <span class="ac-status status-${a.status||'preview'}">${a.status||'preview'}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function toggleAll(){
+  allChecked=!allChecked;
+  document.querySelectorAll('.ac-check').forEach(c=>c.checked=allChecked);
+  document.querySelector('.chk-all').textContent=(allChecked?'☑':'☐')+' Chọn tất cả';
+}
+
+async function applySelected(){
+  const live=document.getElementById('liveToggle').checked;
+  if(!live){alert('⚠️ Bật Live Mode trước khi Apply!');return;}
+  const checks=[...document.querySelectorAll('.ac-check')];
+  const selected=checks.map((c,i)=>c.checked?i:null).filter(i=>i!==null);
+  if(!selected.length){alert('Chưa chọn action nào!');return;}
+  if(!confirm(`Apply ${selected.length} actions THỰC SỰ lên Meta Ads? Tác động không thể hoàn tác.`))return;
+  const btn=document.getElementById('applyBtn');
+  btn.innerHTML='<span class="sp"></span>Đang apply...';btn.disabled=true;
+  try{
+    const r=await fetch('/api/ads/optimize/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action_ids:selected})});
+    const d=await r.json();
+    if(d.success===false){alert(d.message||d.error||'Lỗi');return;}
+    alert(`✅ Applied ${selected.length} actions!`);
+    await runPreview();await loadLog();
+  }catch(e){alert('❌ '+e.message);}
+  finally{btn.innerHTML='✅ Apply Selected';btn.disabled=false;}
+}
+
+async function loadLog(){
+  document.getElementById('logTb').innerHTML='<tr><td colspan="8" class="ld"><span class="sp"></span>Đang tải...</td></tr>';
+  const d=await api('/api/ads/optimization-log');
+  const items=d.items||[];
+  const tb=document.getElementById('logTb');
+  if(!items.length){tb.innerHTML=`<tr><td colspan="8" class="empty">Chưa có lịch sử</td></tr>`;return;}
+  const fmt=s=>{try{return new Date(s).toLocaleString('vi-VN');}catch{return s;}};
+  tb.innerHTML=items.map(l=>`<tr>
+    <td style="font-size:10px;color:var(--muted)">${fmt(l.run_at)}</td>
+    <td><span style="font-size:10px;color:${l.dry_run?'var(--yellow)':'var(--green)'}">${l.dry_run?'DRY':'LIVE'}</span></td>
+    <td><span class="rule-pill rp-${l.rule}">${l.rule}</span></td>
+    <td style="font-size:11px;color:var(--muted)">${l.action}</td>
+    <td style="font-size:11px">${l.adset_name||'—'}</td>
+    <td style="font-size:11px;color:var(--muted)">${(l.campaign||'').substring(0,25)}</td>
+    <td style="font-size:11px;color:var(--muted)">${(l.reason||'').substring(0,50)}</td>
+    <td><span class="rule-pill rp-${l.rule}" style="font-size:10px">${l.status}</span></td>
+  </tr>`).join('');
+}
+
+// Init
+onModeChange();
+runPreview();
+loadLog();
+</script>
+</body>
+</html>

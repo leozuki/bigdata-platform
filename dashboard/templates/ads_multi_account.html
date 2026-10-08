@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Multi-Account Ads Dashboard — BDS Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#1877f2;--green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;--teal:#39d353;--r:12px}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100}
+    nav .logo{font-size:17px;font-weight:700;color:var(--accent)}
+    nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;transition:all .2s}
+    nav a:hover,nav a.active{color:var(--text);background:var(--bg3)}
+    nav .badge{background:var(--purple);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;margin-left:3px}
+    .nr{margin-left:auto;display:flex;align-items:center;gap:10px}
+    .sim-tag{font-size:11px;color:var(--purple);background:rgba(188,140,255,.15);padding:3px 8px;border-radius:16px;border:1px solid rgba(188,140,255,.3)}
+    .container{max-width:1500px;margin:0 auto;padding:24px}
+    h1{font-size:24px;font-weight:700;margin-bottom:4px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+    .controls{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+    select,button{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 13px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s}
+    button:hover,select:hover{border-color:var(--accent)}
+    .btn-p{background:var(--accent);border-color:var(--accent);font-weight:600}
+    /* KPI GRID */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:20px}
+    .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;transition:transform .2s}
+    .kpi:hover{transform:translateY(-2px)}
+    .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .kpi.bl::before{background:var(--accent)}.kpi.gr::before{background:var(--green)}.kpi.ye::before{background:var(--yellow)}.kpi.pu::before{background:var(--purple)}.kpi.re::before{background:var(--red)}.kpi.te::before{background:var(--teal)}
+    .kpi-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .kpi-val{font-size:22px;font-weight:700;line-height:1}
+    .kpi-sub{font-size:10px;color:var(--muted);margin-top:4px}
+    /* SECTION GRIDS */
+    .sec3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+    .sec2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
+    @media(max-width:1100px){.sec3{grid-template-columns:1fr 1fr}.sec2{grid-template-columns:1fr}}
+    @media(max-width:700px){.sec3{grid-template-columns:1fr}}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+    .ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .ch h3{font-size:14px;font-weight:600}
+    .cb{padding:16px}
+    .chart-box{position:relative;height:200px}
+    /* TABLES */
+    .tw{overflow-x:auto;max-height:340px;overflow-y:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:var(--bg3);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;position:sticky;top:0}
+    td{padding:8px 10px;border-bottom:1px solid var(--border)}
+    tr:last-child td{border:none}tr:hover td{background:rgba(255,255,255,.02)}
+    /* BADGES */
+    .bg{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3);padding:2px 7px;border-radius:10px;font-size:11px}
+    .bm{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.3);padding:2px 7px;border-radius:10px;font-size:11px}
+    .bp{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3);padding:2px 7px;border-radius:10px;font-size:11px}
+    .bpu{background:rgba(188,140,255,.15);color:var(--purple);padding:2px 7px;border-radius:10px;font-size:11px}
+    .bte{background:rgba(57,211,83,.15);color:var(--teal);padding:2px 7px;border-radius:10px;font-size:11px}
+    /* BM CARDS */
+    .bm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+    .bm-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;border-left:4px solid}
+    .bm-card.corporate{border-color:var(--accent)}
+    .bm-card.agency{border-color:var(--green)}
+    .bm-card.individual{border-color:var(--purple)}
+    .bm-name{font-size:12px;font-weight:600;margin-bottom:8px}
+    .bm-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;color:var(--muted)}
+    .bm-row span{color:var(--text);font-weight:500}
+    /* TIER PILLS */
+    .tier-WINNER{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3);padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600}
+    .tier-SCALING{background:rgba(57,211,83,.15);color:var(--teal);border:1px solid rgba(57,211,83,.3);padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600}
+    .tier-STABLE{background:rgba(24,119,242,.15);color:var(--accent);border:1px solid rgba(24,119,242,.3);padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600}
+    .tier-DECLINING{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.3);padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600}
+    .tier-POOR{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3);padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600}
+    .tier-TESTING{background:rgba(139,148,158,.15);color:var(--muted);border:1px solid rgba(139,148,158,.3);padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600}
+    /* ACTION CARDS */
+    .ac{background:var(--bg3);border-radius:8px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+    .ac-r{font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:4px;flex-shrink:0}
+    .ac-r.PAUSE{background:rgba(248,81,73,.2);color:var(--red)}
+    .ac-r.SCALE{background:rgba(63,185,80,.2);color:var(--green)}
+    .ac-r.WINNER{background:rgba(188,140,255,.2);color:var(--purple)}
+    /* SPINNER */
+    .sp{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ld{color:var(--muted);font-size:12px;padding:24px;text-align:center}
+    /* INSIGHTS BOX */
+    .insight{background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid var(--border);font-size:12px}
+    .insight.warn{border-left-color:var(--yellow)}
+    .insight.ok{border-left-color:var(--green)}
+    .insight.crit{border-left-color:var(--red)}
+    .insight.info{border-left-color:var(--accent)}
+    .il{font-weight:600;margin-bottom:3px;font-size:11px}
+    .is{color:var(--muted)}
+    /* TIER BAR */
+    .tier-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:10px}
+    .tier-seg{height:100%;transition:width .5s}
+    .tier-legend{display:flex;flex-wrap:wrap;gap:6px;font-size:10px;margin-top:6px}
+    .tl-item{display:flex;align-items:center;gap:4px}
+    .tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    /* FILTER BAR */
+    .filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+    .filter-bar label{font-size:11px;color:var(--muted)}
+    .filter-bar select{font-size:11px;padding:4px 8px}
+  </style>
+</head>
+<body>
+<nav>
+  <span class="logo">⚡ BĐS Analytics</span>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/">🏠 Tổng quan</a><a href="/leads">🎯 Leads</a><a href="/clusters">🧠 Clusters</a>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/ads">📢 Ads</a><a href="/ads/optimizer">⚡ Optimizer</a>
+  <a href="/ads/multi-account" class="active">🏢 Multi-Account <span class="badge">SIM</span></a>
+  <a href="/ads/content">🎨 Content</a>
+  <div class="nr">
+    <span class="sim-tag">🧪 SIMULATION — 3 BMs | 9 TKQC | 11 Pages</span>
+    <select id="datePreset" onchange="loadAll()">
+      <option value="last_7d">7 ngày</option>
+      <option value="last_14d">14 ngày</option>
+      <option value="last_30d">30 ngày</option>
+    </select>
+  </div>
+</nav>
+
+<div class="container">
+  <div><h1>🏢 Multi-Account Ads Analytics</h1>
+    <p class="sub">So sánh hiệu suất qua 3 Business Managers · 9 Tài khoản QC · 11 Fanpages · 32 Campaigns</p>
+  </div>
+
+  <!-- KPI Summary -->
+  <div class="kpi-grid" id="kpiGrid"><div class="ld"><span class="sp"></span>Đang tải...</div></div>
+
+  <!-- Tier Distribution Bar -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch"><h3>🎯 Phân bổ ngân sách theo Performance Tier</h3></div>
+    <div class="cb">
+      <div class="tier-bar" id="tierBar"></div>
+      <div class="tier-legend" id="tierLegend"></div>
+      <div id="tierTable" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- 3 columns: BMs / Trend Spend / Trend Leads -->
+  <div class="sec2">
+    <!-- BM Cards -->
+    <div class="card">
+      <div class="ch"><h3>🏦 Business Managers</h3></div>
+      <div class="cb">
+        <div class="bm-grid" id="bmCards"><div class="ld"><span class="sp"></span>Đang tải...</div></div>
+      </div>
+    </div>
+    <!-- Spend trend by BM -->
+    <div class="card">
+      <div class="ch"><h3>📈 Chi tiêu theo ngày / BM</h3>
+        <div style="display:flex;gap:6px">
+          <button onclick="switchChart('spend')" id="btnSpend" class="btn-p" style="font-size:11px;padding:4px 8px">Chi tiêu</button>
+          <button onclick="switchChart('leads')" id="btnLeads" style="font-size:11px;padding:4px 8px">Leads</button>
+        </div>
+      </div>
+      <div class="cb"><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- TKQC Table + AI Insights -->
+  <div class="sec2">
+    <!-- TKQC Performance Table -->
+    <div class="card">
+      <div class="ch"><h3>💳 Hiệu suất theo Tài khoản QC (TKQC)</h3></div>
+      <div class="cb">
+        <div class="tw"><table>
+          <thead><tr><th>TKQC</th><th>BM</th><th>Camps</th><th>Chi tiêu</th><th>Leads</th><th>CPL</th><th>Quality</th><th>Đánh giá</th></tr></thead>
+          <tbody id="accTb"><tr><td colspan="8" class="ld"><span class="sp"></span></td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- Analysis & Insights -->
+    <div class="card">
+      <div class="ch"><h3>🧠 Phân tích & Khuyến nghị</h3></div>
+      <div class="cb"><div id="insights"><div class="ld"><span class="sp"></span>Đang phân tích...</div></div></div>
+    </div>
+  </div>
+
+  <!-- Full Campaign Table -->
+  <div class="card">
+    <div class="ch">
+      <h3>📋 Tất cả Campaigns — Cross-Account</h3>
+    </div>
+    <div class="cb">
+      <div class="filter-bar">
+        <label>BM:</label>
+        <select id="filterBm" onchange="loadCampaigns()">
+          <option value="all">Tất cả BM</option>
+          <option value="bm_corp_001">BM Corporate</option>
+          <option value="bm_agency_002">BM Agency</option>
+          <option value="bm_agent_003">BM Individual</option>
+        </select>
+        <label>Tier:</label>
+        <select id="filterTier" onchange="loadCampaigns()">
+          <option value="all">Mọi tier</option>
+          <option value="WINNER">WINNER</option>
+          <option value="SCALING">SCALING</option>
+          <option value="STABLE">STABLE</option>
+          <option value="DECLINING">DECLINING</option>
+          <option value="POOR">POOR</option>
+          <option value="TESTING">TESTING</option>
+        </select>
+        <label style="margin-left:8px">Tổng: <strong id="campCount">—</strong></label>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Campaign</th><th>TKQC</th><th>BM</th><th>Tier</th><th>Chi tiêu</th><th>Leads</th><th>CPL</th><th>CTR</th><th>Freq</th><th>Quality</th><th>Action gợi ý</th></tr></thead>
+        <tbody id="campTb"><tr><td colspan="11" class="ld"><span class="sp"></span>Đang tải...</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- Multi-account optimizer actions -->
+  <div class="card">
+    <div class="ch">
+      <h3>⚡ Optimizer Actions — Toàn bộ hệ thống</h3>
+      <button class="btn-p" onclick="loadOptimize()" style="font-size:12px;padding:5px 10px">🔍 Tính toán</button>
+    </div>
+    <div class="cb"><div id="optActions" class="ld"><span class="sp"></span>Đang phân tích 89 adsets...</div></div>
+  </div>
+</div>
+
+<script>
+const api=url=>fetch(url).then(r=>r.json());
+const fv=n=>!n?'0đ':n>=1e6?(n/1e6).toFixed(1)+'tr':n>=1000?Math.round(n/1000)+'k':Math.round(n)+'đ';
+const bclass=r=>r==='good'?'bg':r==='poor'?'bp':'bm';
+let trendData={}, trendMode='spend', trendChartInst=null;
+
+const tierColors={WINNER:'#3fb950',SCALING:'#39d353',STABLE:'#1877f2',DECLINING:'#d29922',POOR:'#f85149',TESTING:'#8b949e'};
+
+async function loadAll(){
+  const p=document.getElementById('datePreset').value;
+  await Promise.all([loadOverview(p), loadTrend(p), loadCampaigns()]);
+  loadOptimize();
+}
+
+async function loadOverview(p='last_7d'){
+  const d=await api(`/api/ads/multi-account/overview?date_preset=${p}`);
+  const s=d.summary||{};
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi bl"><div class="kpi-lbl">💰 Tổng chi tiêu</div><div class="kpi-val">${fv(s.total_spend||0)}</div><div class="kpi-sub">${d.days||7} ngày</div></div>
+    <div class="kpi gr"><div class="kpi-lbl">🎯 Tổng Leads</div><div class="kpi-val">${(s.total_leads||0).toLocaleString()}</div><div class="kpi-sub">Tất cả nguồn</div></div>
+    <div class="kpi ye"><div class="kpi-lbl">📊 CPL Tổng thể</div><div class="kpi-val">${fv(s.overall_cpl||0)}</div><div class="kpi-sub">Chuẩn &lt;150k</div></div>
+    <div class="kpi pu"><div class="kpi-lbl">⭐ Quality TB</div><div class="kpi-val">${(s.avg_quality||0).toFixed(1)}</div><div class="kpi-sub">Max 10</div></div>
+    <div class="kpi te"><div class="kpi-lbl">🏢 Business Managers</div><div class="kpi-val">${s.total_bms||0}</div><div class="kpi-sub">${s.total_accounts||0} TKQC</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">📢 Campaigns</div><div class="kpi-val">${s.total_campaigns||0}</div><div class="kpi-sub">${s.total_adsets||0} Adsets</div></div>
+    <div class="kpi re"><div class="kpi-lbl">📄 Fanpages</div><div class="kpi-val">${s.total_pages||0}</div><div class="kpi-sub">Tất cả loại</div></div>
+    <div class="kpi gr"><div class="kpi-lbl">💬 Mess Leads</div><div class="kpi-val">${(s.messenger_leads||0).toLocaleString()}</div><div class="kpi-sub">Quality scored</div></div>
+  `;
+
+  renderTierBar(d.by_tier||{});
+  renderBmCards(d.by_bm||[]);
+  renderAccTable(d.by_account||[]);
+  renderInsights(d);
+}
+
+function renderTierBar(tiers){
+  const order=['WINNER','SCALING','STABLE','DECLINING','POOR','TESTING'];
+  const bar=document.getElementById('tierBar');
+  const leg=document.getElementById('tierLegend');
+  bar.innerHTML=order.map(t=>{
+    const v=(tiers[t]||{}).spend_pct||0;
+    return `<div class="tier-seg" style="width:${v}%;background:${tierColors[t]||'#888'}" title="${t}: ${v}%"></div>`;
+  }).join('');
+  leg.innerHTML=order.map(t=>{
+    const v=tiers[t]||{};
+    if(!v.campaign_count)return '';
+    return `<div class="tl-item"><div class="tl-dot" style="background:${tierColors[t]}"></div><span>${t} ${v.spend_pct||0}% (${fv(v.total_spend||0)})</span></div>`;
+  }).join('');
+
+  // Tier table
+  const tt=document.getElementById('tierTable');
+  tt.innerHTML=`<table><thead><tr><th>Tier</th><th>Campaigns</th><th>Chi tiêu</th><th>Leads</th><th>CPL</th><th>Quality</th><th>Spend%</th><th>Đánh giá</th></tr></thead><tbody>${
+    order.filter(t=>tiers[t]).map(t=>{
+      const v=tiers[t];
+      const rec=t==='WINNER'||t==='SCALING'?'bg':t==='POOR'||t==='DECLINING'?'bp':'bm';
+      const comment=t==='WINNER'?'Nhân rộng ngay':t==='SCALING'?'Đang scale tốt':t==='STABLE'?'Duy trì':t==='DECLINING'?'Refresh creative':t==='POOR'?'Cân nhắc dừng':'Chờ đủ data';
+      return `<tr>
+        <td><span class="tier-${t}">${t}</span></td>
+        <td>${v.campaign_count}</td><td>${fv(v.total_spend||0)}</td><td>${v.total_leads}</td>
+        <td><span class="${rec}">${fv(v.cpl||0)}</span></td>
+        <td>${(v.avg_quality||0).toFixed(1)}/10</td>
+        <td><strong>${v.spend_pct}%</strong></td>
+        <td style="color:var(--muted);font-size:11px">${comment}</td>
+      </tr>`;
+    }).join('')
+  }</tbody></table>`;
+}
+
+function renderBmCards(bms){
+  const div=document.getElementById('bmCards');
+  if(!bms.length){div.innerHTML='<div class="ld">Không có dữ liệu</div>';return;}
+  div.innerHTML=bms.map(bm=>{
+    const cls=bm.bm_type==='corporate'?'corporate':bm.bm_type==='agency'?'agency':'individual';
+    const icon=bm.bm_type==='corporate'?'🏢':bm.bm_type==='agency'?'🎯':'👤';
+    return `<div class="bm-card ${cls}">
+      <div class="bm-name">${icon} ${bm.bm_name}</div>
+      <div class="bm-row">Chi tiêu <span>${fv(bm.total_spend||0)}</span></div>
+      <div class="bm-row">Leads <span>${bm.total_leads}</span></div>
+      <div class="bm-row">CPL <span>${fv(bm.cpl||0)}</span></div>
+      <div class="bm-row">Campaigns <span>${bm.campaigns}</span></div>
+      <div class="bm-row">Quality <span>${(bm.avg_quality||0).toFixed(1)}/10</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderAccTable(accs){
+  const tb=document.getElementById('accTb');
+  if(!accs.length){tb.innerHTML='<tr><td colspan="8" class="ld">Không có dữ liệu</td></tr>';return;}
+  tb.innerHTML=accs.map(a=>{
+    const cpl=a.cpl||0;
+    const cls=cpl<150000?'bg':cpl>400000?'bp':'bm';
+    const rating=cpl<150000?'Xuất sắc':cpl<280000?'Tốt':cpl<400000?'Trung bình':'Kém';
+    return `<tr>
+      <td style="font-family:monospace;font-size:10px">${a.account_id}</td>
+      <td style="font-size:10px;color:var(--muted)">${a.bm_type||''}</td>
+      <td>${a.campaigns}</td>
+      <td>${fv(a.total_spend||0)}</td>
+      <td>${a.total_leads}</td>
+      <td><span class="${cls}">${fv(cpl)}</span></td>
+      <td>${(a.avg_quality||0).toFixed(1)}</td>
+      <td><span class="${cls}">${rating}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderInsights(d){
+  const bms=d.by_bm||[];
+  const tiers=d.by_tier||{};
+  const accs=d.by_account||[];
+  const s=d.summary||{};
+  const insights_div=document.getElementById('insights');
+
+  const msgs=[];
+
+  // 1. Worst/best BM by CPL
+  if(bms.length>=2){
+    const sorted=[...bms].sort((a,b)=>a.cpl-b.cpl);
+    const best=sorted[0], worst=sorted[sorted.length-1];
+    msgs.push({cls:'ok',title:'BM Hiệu quả nhất',text:`${best.bm_name.substring(0,30)} có CPL thấp nhất: ${fv(best.cpl)} với Quality Score ${best.avg_quality.toFixed(1)}/10`});
+    if(worst.cpl>300000)msgs.push({cls:'warn',title:'BM Cần tối ưu',text:`${worst.bm_name.substring(0,30)} có CPL cao: ${fv(worst.cpl)} — xem xét tái cơ cấu chiến lược`});
+  }
+
+  // 2. POOR tier spending
+  const poor=tiers['POOR'];
+  if(poor&&poor.spend_pct>5)msgs.push({cls:'crit',title:'Ngân sách lãng phí',text:`Tier POOR chiếm ${poor.spend_pct}% chi tiêu (${fv(poor.total_spend)}) với CPL ${fv(poor.cpl)} — cần pause ngay`});
+
+  // 3. WINNER tier
+  const winner=tiers['WINNER'];
+  if(winner&&winner.campaign_count>0)msgs.push({cls:'ok',title:'Sẵn sàng nhân rộng',text:`${winner.campaign_count} campaigns WINNER với CPL ${fv(winner.cpl)} — nên tăng budget thêm ${((winner.spend_pct||0)*2/100*s.total_spend/1e6).toFixed(1)}tr`});
+
+  // 4. Quality gap
+  const bestAcc=[...accs].sort((a,b)=>b.avg_quality-a.avg_quality)[0];
+  const worstAcc=[...accs].sort((a,b)=>a.avg_quality-b.avg_quality)[0];
+  if(bestAcc&&worstAcc&&bestAcc.account_id!==worstAcc.account_id)
+    msgs.push({cls:'info',title:'Chênh lệch Quality Score',text:`${bestAcc.account_id} (Q:${bestAcc.avg_quality}) vs ${worstAcc.account_id} (Q:${worstAcc.avg_quality.toFixed(1)}) — phân tích content khác biệt`});
+
+  // 5. DECLINING → refresh
+  const decline=tiers['DECLINING'];
+  if(decline&&decline.campaign_count>0)msgs.push({cls:'warn',title:'Ad Fatigue cảnh báo',text:`${decline.campaign_count} campaigns DECLINING có dấu hiệu fatigue — cần refresh creative và reset targeting`});
+
+  // 6. Individual agents
+  const agentAcc=accs.find(a=>a.account_id.includes('agent'));
+  if(agentAcc&&agentAcc.cpl<150000)msgs.push({cls:'ok',title:'TKQC cá nhân hiệu quả cao',text:`Agents đạt CPL ${fv(agentAcc.cpl)} — xét tăng budget hoặc scale lên BM Agency`});
+
+  if(!msgs.length)msgs.push({cls:'info',title:'Phân tích hoàn tất',text:'Không có vấn đề nghiêm trọng nào. Tiếp tục monitor.'});
+
+  insights_div.innerHTML=msgs.map(m=>`<div class="insight ${m.cls}"><div class="il">${m.title}</div><div class="is">${m.text}</div></div>`).join('');
+}
+
+async function loadTrend(p='last_7d'){
+  trendData=await api(`/api/ads/multi-account/trend?date_preset=${p}`);
+  renderTrend();
+}
+
+function renderTrend(){
+  const ctx=document.getElementById('trendChart').getContext('2d');
+  if(trendChartInst)trendChartInst.destroy();
+  const ds=trendMode==='spend'?trendData.spend_datasets||[]:trendData.leads_datasets||[];
+  trendChartInst=new Chart(ctx,{
+    type:'line',
+    data:{labels:trendData.labels||[],datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:9}},grid:{color:'#21262d'}},
+              y:{ticks:{color:'#8b949e',font:{size:9},callback:v=>trendMode==='spend'?v+'tr':v},grid:{color:'#21262d'}}}}
+  });
+}
+
+function switchChart(mode){
+  trendMode=mode;
+  document.getElementById('btnSpend').className=mode==='spend'?'btn-p':'';
+  document.getElementById('btnLeads').className=mode==='leads'?'btn-p':'';
+  renderTrend();
+}
+
+async function loadCampaigns(){
+  const bm=document.getElementById('filterBm').value;
+  const tier=document.getElementById('filterTier').value;
+  const p=document.getElementById('datePreset').value;
+  document.getElementById('campTb').innerHTML='<tr><td colspan="11" class="ld"><span class="sp"></span>Đang tải...</td></tr>';
+  const d=await api(`/api/ads/multi-account/campaigns?bm=${bm}&tier=${tier}&date_preset=${p}`);
+  const camps=d.campaigns||[];
+  document.getElementById('campCount').textContent=camps.length;
+  const tb=document.getElementById('campTb');
+  if(!camps.length){tb.innerHTML='<tr><td colspan="11" class="ld">Không có dữ liệu</td></tr>';return;}
+  const actionMap={WINNER:'📈 Nhân rộng',SCALING:'📈 Tăng budget',STABLE:'✅ Duy trì',DECLINING:'🔄 Refresh creative',POOR:'⏸️ Cân nhắc dừng',TESTING:'🧪 Chờ data'};
+  const actionCls={WINNER:'bg',SCALING:'bte',STABLE:'bg',DECLINING:'bm',POOR:'bp',TESTING:'bm'};
+  tb.innerHTML=camps.map(c=>{
+    const cpl=c.cpl||0;
+    const cls=cpl<150000?'bg':cpl>400000?'bp':'bm';
+    return `<tr>
+      <td><strong style="font-size:12px">${c.name.substring(0,35)}</strong><br><span style="color:var(--muted);font-size:10px">${c.id}</span></td>
+      <td style="font-size:10px;font-family:monospace">${c.account_id.replace('act_','')}</td>
+      <td style="font-size:10px;color:var(--muted)">${c.bm_id.replace('bm_','')}</td>
+      <td><span class="tier-${c.tier}">${c.tier}</span></td>
+      <td>${fv(c.total_spend||0)}</td>
+      <td>${c.total_leads}</td>
+      <td><span class="${cls}">${fv(cpl)}</span></td>
+      <td>${(c.ctr||0).toFixed(2)}%</td>
+      <td>${(c.frequency||0).toFixed(1)}x</td>
+      <td>${(c.avg_quality||0).toFixed(1)}/10</td>
+      <td><span class="${actionCls[c.tier]||'bm'}" style="font-size:10px">${actionMap[c.tier]||'—'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadOptimize(){
+  document.getElementById('optActions').innerHTML='<div class="ld"><span class="sp"></span>Phân tích 89 adsets...</div>';
+  const d=await api('/api/ads/multi-account/optimize-preview');
+  const acts=d.actions||[];
+  const oc=d.rule_counts||{};
+  if(!acts.length){
+    document.getElementById('optActions').innerHTML='<p style="color:var(--green);text-align:center;padding:20px">✅ Tất cả adsets trong ngưỡng tối ưu</p>';
+    return;
+  }
+  const summary=`<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="background:rgba(248,81,73,.15);color:var(--red);padding:4px 10px;border-radius:8px;font-size:12px">⏸️ PAUSE: ${oc.PAUSE||0}</span>
+    <span style="background:rgba(63,185,80,.15);color:var(--green);padding:4px 10px;border-radius:8px;font-size:12px">📈 SCALE: ${oc.SCALE||0}</span>
+    <span style="background:rgba(188,140,255,.15);color:var(--purple);padding:4px 10px;border-radius:8px;font-size:12px">🏆 WINNER: ${oc.WINNER||0}</span>
+    <span style="color:var(--muted);font-size:12px;padding:4px">Tổng: ${acts.length} actions trên ${d.universe_size?.adsets||0} adsets</span>
+  </div>`;
+  document.getElementById('optActions').innerHTML=summary+acts.slice(0,20).map(a=>`
+    <div class="ac">
+      <span class="ac-r ${a.rule}">${a.rule}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:500">${a.adset_name}</div>
+        <div style="font-size:11px;color:var(--muted)">${a.campaign.substring(0,50)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">TKQC: ${a.account_id} | ${a.reason}</div>
+        <div style="font-size:11px;margin-top:4px;color:${a.rule==='PAUSE'?'var(--red)':a.rule==='SCALE'?'var(--green)':'var(--purple)'}">${a.impact}</div>
+      </div>
+    </div>
+  `).join('')+(acts.length>20?`<p style="text-align:center;color:var(--muted);font-size:11px">... và ${acts.length-20} actions khác</p>`:'');
+}
+
+loadAll();
+</script>
+</body>
+</html>

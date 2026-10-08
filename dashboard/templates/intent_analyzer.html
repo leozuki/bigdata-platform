@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Intent Analyzer — BĐS Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--bg4:#2d333b;--border:#30363d;--text:#e6edf3;--muted:#8b949e;
+      --accent:#6366f1;--blue:#1877f2;--green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;--teal:#39d353;--gold:#f59e0b;--r:12px}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* NAV */
+    nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:12px;height:56px;position:sticky;top:0;z-index:100}
+    .nav-logo{font-size:17px;font-weight:800;background:linear-gradient(135deg,#6366f1,#f59e0b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-right:4px;white-space:nowrap}
+    nav a{color:#94a3b8;text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;transition:all .2s;white-space:nowrap}
+    nav a:hover,nav a.active{color:#e6edf3;background:#21262d}
+    nav a.active{color:#6366f1}
+    nav .nd{width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 4px}
+    nav .nb{background:#3fb950;color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;margin-left:3px}
+
+    /* LAYOUT */
+    .container{max-width:1600px;margin:0 auto;padding:20px 24px}
+    .page-title{font-size:22px;font-weight:800;margin-bottom:4px}
+    .page-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    @media(max-width:1000px){.grid{grid-template-columns:1fr}}
+    .col{display:flex;flex-direction:column;gap:14px}
+
+    /* CARDS */
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .ch h3{font-size:13px;font-weight:600}
+    .cb{padding:16px}
+
+    /* INPUT AREA */
+    .msg-builder{display:flex;flex-direction:column;gap:10px}
+    .input-row{display:flex;gap:8px;align-items:flex-end}
+    .msg-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:inherit;resize:none;min-height:60px;outline:none;transition:border-color .2s;line-height:1.5}
+    .msg-input:focus{border-color:var(--accent)}
+    .sender-toggle{display:flex;gap:4px;flex-direction:column}
+    .st-btn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .st-btn.active{background:rgba(99,102,241,.2);border-color:var(--accent);color:var(--accent)}
+    .st-btn.agent.active{background:rgba(63,185,80,.15);border-color:var(--green);color:var(--green)}
+    .add-btn{background:var(--accent);border:none;color:#fff;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .add-btn:hover{background:#4f46e5}
+    .analyze-btn{width:100%;background:linear-gradient(135deg,#6366f1,#1877f2);border:none;color:#fff;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px}
+    .analyze-btn:hover{opacity:.9;transform:translateY(-1px)}
+    .analyze-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .clear-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer}
+
+    /* MESSAGE LIST */
+    .msg-list{max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px}
+    .msg-list::-webkit-scrollbar{width:4px}
+    .msg-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .msg-item{display:flex;gap:8px;align-items:flex-start}
+    .msg-item.agent{flex-direction:row-reverse}
+    .msg-bubble{max-width:85%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;position:relative}
+    .msg-item.customer .msg-bubble{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.2);border-bottom-left-radius:2px}
+    .msg-item.agent .msg-bubble{background:var(--bg3);border:1px solid var(--border);border-bottom-right-radius:2px}
+    .msg-del{position:absolute;top:-6px;right:-6px;width:16px;height:16px;background:var(--red);border-radius:50%;border:none;color:#fff;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1}
+    .msg-item:hover .msg-del{display:flex}
+    .msg-sender{font-size:9px;color:var(--muted);margin-bottom:2px}
+    .msg-count{font-size:11px;color:var(--muted);text-align:center;padding:4px}
+
+    /* LIVE SINGLE CHECK */
+    .live-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:inherit;width:100%;outline:none;transition:all .3s}
+    .live-input:focus{border-color:var(--yellow)}
+    .live-result{margin-top:8px;font-size:12px;min-height:40px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .live-badge{padding:4px 10px;border-radius:16px;font-size:11px;font-weight:700}
+
+    /* SCORE DISPLAY */
+    .composite-display{text-align:center;padding:20px;background:var(--bg3);border-radius:10px;margin-bottom:14px;position:relative;overflow:hidden}
+    .composite-display::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(99,102,241,.06),transparent 70%);pointer-events:none}
+    .big-score{font-size:56px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+    .big-score-sub{font-size:12px;color:var(--muted);margin-top:4px}
+    .intent-badge-big{display:inline-block;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:700;margin-top:10px}
+    .prob-display{font-size:12px;margin-top:8px;opacity:.7}
+    .confidence-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+
+    /* CATEGORY BARS */
+    .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .cat-item{background:var(--bg3);border-radius:10px;padding:12px}
+    .cat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .cat-label{font-size:11px;font-weight:600}
+    .cat-score{font-size:16px;font-weight:800}
+    .cat-bar-wrap{background:rgba(255,255,255,.06);border-radius:4px;height:5px;overflow:hidden}
+    .cat-bar{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+    .cat-signals{font-size:10px;color:var(--muted);margin-top:4px}
+
+    /* SIGNAL CHIPS */
+    .signal-list{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto}
+    .signal-list::-webkit-scrollbar{width:3px}
+    .signal-list::-webkit-scrollbar-thumb{background:var(--border)}
+    .signal-chip{background:var(--bg3);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px;border-left:3px solid}
+    .sc-icon{font-size:15px;flex-shrink:0}
+    .sc-label{font-size:11px;font-weight:600;margin-bottom:1px}
+    .sc-snippet{font-size:10px;color:var(--muted);font-style:italic}
+    .sc-score{font-size:13px;font-weight:800;flex-shrink:0;min-width:22px;text-align:right}
+
+    /* SUMMARY CARDS */
+    .summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .sum-item{background:var(--bg3);border-radius:8px;padding:10px;text-align:center}
+    .sum-icon{font-size:18px;margin-bottom:4px}
+    .sum-val{font-size:13px;font-weight:700;margin-bottom:2px}
+    .sum-lbl{font-size:10px;color:var(--muted)}
+
+    /* ACTION BOX */
+    .action-box{border-radius:10px;padding:14px;border:1px solid;display:flex;gap:12px;align-items:center}
+    .ab-icon{font-size:28px;flex-shrink:0}
+    .ab-title{font-size:15px;font-weight:700;margin-bottom:2px}
+    .ab-urgency{font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block;margin-top:4px}
+
+    /* QUICK SAMPLES */
+    .sample-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .sample-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 10px;font-size:11px;text-align:left;cursor:pointer;transition:all .15s;display:flex;gap:6px;align-items:flex-start}
+    .sample-btn:hover{border-color:var(--accent);background:rgba(99,102,241,.08)}
+    .sample-intent{font-weight:600;font-size:10px;flex-shrink:0}
+
+    /* SPINNER */
+    .sp{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ld{padding:20px;text-align:center;color:var(--muted);font-size:12px}
+
+    /* EMPTY */
+    .empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+    .es-icon{font-size:40px;margin-bottom:8px}
+    .es-sub{font-size:12px;line-height:1.6}
+  </style>
+</head>
+<body>
+<nav>
+  <span class="nav-logo">⚡ BĐS Analytics</span>
+  <span class="nd"></span>
+  <a href="/">🏠 Tổng quan</a><a href="/leads">🎯 Leads</a><a href="/clusters">🧠 Clusters</a>
+  <a href="/leads/profile">👤 Profile 360°</a>
+  <a href="/leads/intent" class="active">🧠 Intent <span class="nb">AI</span></a>
+  <span class="nd"></span>
+  <a href="/ads">📢 Ads</a><a href="/ads/optimizer">⚡ Optimizer</a>
+  <a href="/ads/multi-account">🏢 Multi-Account</a>
+  <a href="/ads/content">🎨 Content</a>
+</nav>
+
+<div class="container">
+  <div class="page-title">🧠 Intent Analyzer — Phân tích ý định mua hàng</div>
+  <div class="page-sub">Nhập nội dung hội thoại Messenger · Phát hiện 6 nhóm tín hiệu intent · Dự báo xác suất chốt deal</div>
+
+  <div class="grid">
+    <!-- ═══ LEFT: INPUT ═══ -->
+    <div class="col">
+
+      <!-- Live single message checker -->
+      <div class="card">
+        <div class="ch"><h3>⚡ Kiểm tra nhanh một tin nhắn</h3><span style="font-size:10px;color:var(--yellow);font-weight:600">REAL-TIME</span></div>
+        <div class="cb">
+          <input class="live-input" id="liveInput" type="text" placeholder="Nhập tin nhắn của khách để phân tích ngay..." oninput="onLiveInput()">
+          <div class="live-result" id="liveResult">
+            <span style="color:var(--muted);font-size:11px">Gõ một tin nhắn để xem phân tích ngay bên dưới...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conversation builder -->
+      <div class="card">
+        <div class="ch"><h3>💬 Xây dựng cuộc hội thoại</h3><span style="font-size:10px;color:var(--muted)" id="msgCountBadge">0 tin nhắn</span></div>
+        <div class="cb">
+          <!-- Sender toggle -->
+          <div class="msg-builder">
+            <div class="input-row">
+              <div class="sender-toggle">
+                <button class="st-btn active" id="btnCust" onclick="setSender('customer')">👤 Khách</button>
+                <button class="st-btn agent" id="btnAgent" onclick="setSender('agent')">🧑 Sales</button>
+              </div>
+              <textarea class="msg-input" id="msgInput" placeholder="Nhập nội dung tin nhắn..." rows="3" onkeydown="onKeyDown(event)"></textarea>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="add-btn" onclick="addMessage()">+ Thêm tin nhắn</button>
+              <button class="clear-btn" onclick="clearAll()">🗑 Xóa hết</button>
+            </div>
+          </div>
+
+          <!-- Message list -->
+          <div style="margin-top:12px">
+            <div class="msg-list" id="msgList">
+              <div class="msg-count">Chưa có tin nhắn — thêm hoặc chọn mẫu bên dưới</div>
+            </div>
+          </div>
+
+          <button class="analyze-btn" id="analyzeBtn" onclick="analyzeAll()" disabled>
+            🔍 Phân tích Intent toàn bộ hội thoại
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick sample conversations -->
+      <div class="card">
+        <div class="ch"><h3>📚 Mẫu hội thoại nhanh</h3></div>
+        <div class="cb">
+          <div class="sample-grid">
+            <button class="sample-btn" onclick="loadSample('hot')">
+              <span class="sample-intent" style="color:var(--green)">🔥 NÓNG</span>
+              <span>"Mình muốn đặt cọc căn 3PN, ngân sách 4.5 tỷ, cuối tuần có thể xem không?"</span>
+            </button>
+            <button class="sample-btn" onclick="loadSample('research')">
+              <span class="sample-intent" style="color:var(--yellow)">📖 NGHIÊN CỨU</span>
+              <span>"Dự án có tiện ích gì? Vị trí ở đâu? Gần trường không?"</span>
+            </button>
+            <button class="sample-btn" onclick="loadSample('qualify')">
+              <span class="sample-intent" style="color:var(--blue)">💰 TÀI CHÍNH</span>
+              <span>"Có hỗ trợ vay ngân hàng không? Lãi suất bao nhiêu? Trả trước bao nhiêu?"</span>
+            </button>
+            <button class="sample-btn" onclick="loadSample('concern')">
+              <span class="sample-intent" style="color:var(--red)">⚠️ LO NGẠI</span>
+              <span>"Giá đắt quá, vợ mình chưa đồng ý, để suy nghĩ thêm đã..."</span>
+            </button>
+            <button class="sample-btn" onclick="loadSample('full')">
+              <span class="sample-intent" style="color:var(--purple)">💬 CONVERSATION</span>
+              <span>Mẫu hội thoại đầy đủ 8 tin nhắn (có cả agent)</span>
+            </button>
+            <button class="sample-btn" onclick="loadSample('legal')">
+              <span class="sample-intent" style="color:var(--purple)">📋 PHÁP LÝ</span>
+              <span>"Sổ hồng chưa? Pháp lý dự án thế nào? Bao giờ bàn giao?"</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RIGHT: RESULTS ═══ -->
+    <div class="col">
+
+      <!-- Main score -->
+      <div class="card" id="resultCard">
+        <div class="ch"><h3>📊 Kết quả phân tích Intent</h3><span style="font-size:10px;color:var(--muted)" id="analyzedAt"></span></div>
+        <div class="cb">
+          <div class="empty-state" id="emptyState">
+            <div class="es-icon">🎯</div>
+            <div style="font-weight:600;margin-bottom:6px">Chưa có kết quả</div>
+            <div class="es-sub">Thêm tin nhắn và nhấn "Phân tích" hoặc<br>dùng mẫu hội thoại có sẵn</div>
+          </div>
+          <div id="resultContent" style="display:none">
+            <!-- Composite score -->
+            <div class="composite-display">
+              <div class="big-score" id="bigScore">—</div>
+              <div class="big-score-sub">/ 10 — Intent Score tổng hợp</div>
+              <div><span class="intent-badge-big" id="intentBadge"></span></div>
+              <div class="prob-display" id="probDisplay"></div>
+            </div>
+
+            <!-- Summary stats -->
+            <div class="summary-row" style="margin-bottom:14px">
+              <div class="sum-item">
+                <div class="sum-icon">💬</div>
+                <div class="sum-val" id="statMsg">—</div>
+                <div class="sum-lbl">Tin nhắn KH</div>
+              </div>
+              <div class="sum-item">
+                <div class="sum-icon">⏱</div>
+                <div class="sum-val" id="statResp">—</div>
+                <div class="sum-lbl">Phản hồi TB</div>
+              </div>
+              <div class="sum-item">
+                <div class="sum-icon">📈</div>
+                <div class="sum-val" id="statProg">—</div>
+                <div class="sum-lbl">Xu hướng</div>
+              </div>
+            </div>
+
+            <!-- Next action -->
+            <div class="action-box" id="actionBox" style="margin-bottom:14px">
+              <span class="ab-icon" id="actionIcon">💬</span>
+              <div>
+                <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Hành động đề xuất</div>
+                <div class="ab-title" id="actionTitle">—</div>
+                <span class="ab-urgency" id="actionUrgency"></span>
+              </div>
+            </div>
+
+            <!-- AI Summary -->
+            <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;border-left:3px solid var(--accent)">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">🤖 AI Summary</div>
+              <div style="font-size:12px;line-height:1.7" id="aiSummary">—</div>
+            </div>
+
+            <!-- Category breakdown -->
+            <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">Phân tích theo danh mục</div>
+            <div class="cat-grid" id="catGrid">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top signals detected -->
+      <div class="card" id="signalsCard" style="display:none">
+        <div class="ch"><h3>🎯 Tín hiệu phát hiện được</h3><span style="font-size:10px;color:var(--muted)" id="sigCount"></span></div>
+        <div class="cb">
+          <div class="signal-list" id="signalList"></div>
+        </div>
+      </div>
+
+      <!-- Conversation stage -->
+      <div class="card" id="stageCard" style="display:none">
+        <div class="ch"><h3>📊 Giai đoạn hội thoại</h3></div>
+        <div class="cb">
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="stageDisplay"></div>
+          <div style="margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:11px;color:var(--muted)" id="stageNote"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let messages = [];
+let currentSender = 'customer';
+let liveTimer = null;
+
+// ── Sender toggle ──────────────────────────────────────────────────────────────
+function setSender(s) {
+  currentSender = s;
+  document.getElementById('btnCust').className  = 'st-btn' + (s === 'customer' ? ' active' : '');
+  document.getElementById('btnAgent').className = 'st-btn agent' + (s === 'agent' ? ' active' : '');
+}
+
+// ── Add message ────────────────────────────────────────────────────────────────
+function onKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addMessage(); }
+}
+
+function addMessage() {
+  const text = document.getElementById('msgInput').value.trim();
+  if (!text) return;
+  const ts = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+  messages.push({ sender: currentSender, text, timestamp: ts });
+  document.getElementById('msgInput').value = '';
+  document.getElementById('msgInput').focus();
+  renderMessages();
+}
+
+function removeMessage(idx) {
+  messages.splice(idx, 1);
+  renderMessages();
+}
+
+function clearAll() {
+  messages = [];
+  renderMessages();
+  document.getElementById('resultContent').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('signalsCard').style.display = 'none';
+  document.getElementById('stageCard').style.display = 'none';
+}
+
+function renderMessages() {
+  const list = document.getElementById('msgList');
+  const count = messages.filter(m => m.sender === 'customer').length;
+  document.getElementById('msgCountBadge').textContent = `${messages.length} tin nhắn`;
+  document.getElementById('analyzeBtn').disabled = messages.length === 0;
+  if (!messages.length) {
+    list.innerHTML = '<div class="msg-count">Chưa có tin nhắn — thêm hoặc chọn mẫu bên dưới</div>';
+    return;
+  }
+  list.innerHTML = messages.map((m, i) => `
+    <div class="msg-item ${m.sender}">
+      <div class="msg-bubble">
+        <div class="msg-sender">${m.sender === 'customer' ? '👤 Khách' : '🧑 Sales'} · ${m.timestamp}</div>
+        ${m.text}
+        <button class="msg-del" onclick="removeMessage(${i})">×</button>
+      </div>
+    </div>`).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+// ── Samples ────────────────────────────────────────────────────────────────────
+const SAMPLES = {
+  hot: [
+    {sender:'customer',text:'Cho mình hỏi dự án còn căn hộ 3PN không?'},
+    {sender:'agent',text:'Dạ vẫn còn ạ, chị quan tâm diện tích nào ạ?'},
+    {sender:'customer',text:'Khoảng 90-100m2, ngân sách tầm 4.5 tỷ được không?'},
+    {sender:'agent',text:'Dạ với ngân sách đó chị có thể xét căn tầng trung ạ'},
+    {sender:'customer',text:'Pháp lý dự án thế nào, sổ hồng chưa anh?'},
+    {sender:'agent',text:'Dự án đã có sổ hồng từng căn ạ'},
+    {sender:'customer',text:'Mình muốn đặt cọc giữ chỗ, cuối tuần này xem nhà mẫu được không?'},
+  ],
+  research: [
+    {sender:'customer',text:'Dự án này ở đâu vậy bạn?'},
+    {sender:'agent',text:'Dạ dự án nằm tại Quận 9, cạnh Vinhomes Grand Park ạ'},
+    {sender:'customer',text:'Gần trường học không? Có hồ bơi không?'},
+    {sender:'agent',text:'Dạ có trường quốc tế trong khuôn viên và hồ bơi Olympic ạ'},
+    {sender:'customer',text:'Diện tích căn 2PN bao nhiêu m2?'},
+    {sender:'customer',text:'Gửi mình bản vẽ mặt bằng và brochure với'},
+  ],
+  qualify: [
+    {sender:'customer',text:'Dự án có hỗ trợ vay ngân hàng không?'},
+    {sender:'agent',text:'Dạ có liên kết với 5 ngân hàng lớn ạ'},
+    {sender:'customer',text:'Lãi suất ưu đãi bao nhiêu? Thời gian ưu đãi bao lâu?'},
+    {sender:'customer',text:'Mình cần đặt trước bao nhiêu để giữ chỗ?'},
+    {sender:'agent',text:'Dạ đặt cọc 50 triệu là giữ được suất ạ'},
+    {sender:'customer',text:'Vay được 70% không? Thu nhập 40tr/tháng có đủ điều kiện không?'},
+    {sender:'customer',text:'Lịch thanh toán theo tiến độ hay theo năm anh?'},
+  ],
+  concern: [
+    {sender:'customer',text:'Nhìn giá đắt quá vậy'},
+    {sender:'agent',text:'Dạ giá này đã bao gồm nội thất cơ bản ạ'},
+    {sender:'customer',text:'So với dự án X bên kia thì đắt hơn nhiều'},
+    {sender:'customer',text:'Vợ mình chưa đồng ý, để suy nghĩ thêm đã'},
+    {sender:'agent',text:'Dạ chị có thể mang anh/chị đến xem thực tế để cảm nhận ạ'},
+    {sender:'customer',text:'Chưa chắc, không biết khu này an ninh thế nào'},
+  ],
+  full: [
+    {sender:'customer',text:'Cho hỏi dự án The Beverly này thông tin chung như thế nào?'},
+    {sender:'agent',text:'Dạ chào chị, The Beverly là dự án luxury tại Quận 9 ạ'},
+    {sender:'customer',text:'Diện tích căn 3PN bao nhiêu? Giá căn đó tầm bao nhiêu?'},
+    {sender:'agent',text:'Dạ căn 3PN diện tích 110m2, giá từ 5.8 tỷ ạ'},
+    {sender:'customer',text:'Pháp lý thế nào? Sổ hồng chưa anh?'},
+    {sender:'agent',text:'Dạ đã có sổ hồng từng căn, pháp lý hoàn chỉnh ạ'},
+    {sender:'customer',text:'Có hỗ trợ vay vốn không? Lãi suất mấy %?'},
+    {sender:'customer',text:'Mình ngân sách khoảng 6 tỷ, cọc được không? Cuối tuần mình muốn xem nhà mẫu'},
+  ],
+  legal: [
+    {sender:'customer',text:'Sổ hồng dự án ra chưa hay còn đang chờ?'},
+    {sender:'agent',text:'Dạ sổ hồng đã có từ 2023 ạ'},
+    {sender:'customer',text:'Thế thì tốt. Pháp lý có tranh chấp gì không?'},
+    {sender:'customer',text:'Chủ đầu tư có bảo lãnh ngân hàng không?'},
+    {sender:'agent',text:'Dạ có bảo lãnh từ Vietcombank ạ'},
+    {sender:'customer',text:'Bàn giao khi nào? Có cam kết phạt chậm bàn giao không?'},
+  ],
+};
+
+function loadSample(key) {
+  const sample = SAMPLES[key];
+  if (!sample) return;
+  messages = sample.map((m, i) => ({...m, timestamp: `${10+i*2}:0${i*3%10 < 10 ? '0'+i*3%10 : i*3%10}`}));
+  renderMessages();
+  analyzeAll();
+}
+
+// ── Live single message analysis ───────────────────────────────────────────────
+function onLiveInput() {
+  clearTimeout(liveTimer);
+  const text = document.getElementById('liveInput').value.trim();
+  const res = document.getElementById('liveResult');
+  if (!text) {
+    res.innerHTML = '<span style="color:var(--muted);font-size:11px">Gõ tin nhắn để phân tích...</span>';
+    return;
+  }
+  liveTimer = setTimeout(async () => {
+    try {
+      const d = await fetch('/api/intent/analyze-message', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({text})
+      }).then(r => r.json());
+      const sc = d.composite_score || 0;
+      const color = sc >= 7 ? 'var(--green)' : sc >= 4 ? 'var(--yellow)' : 'var(--muted)';
+      const sigs = d.signals || [];
+      res.innerHTML = `
+        <span class="live-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">Intent ${sc.toFixed(1)}/10</span>
+        <span class="live-badge" style="background:rgba(99,102,241,.15);color:var(--accent)">${d.intent_level || '—'}</span>
+        ${sigs.slice(0,3).map(s => `<span class="live-badge" style="background:var(--bg3);color:var(--text);border:1px solid var(--border)">${s.label}</span>`).join('')}
+        ${sigs.length === 0 ? '<span style="color:var(--muted);font-size:11px">Không phát hiện tín hiệu</span>' : ''}
+      `;
+    } catch(e) { res.innerHTML = `<span style="color:var(--red);font-size:11px">Lỗi: ${e.message}</span>`; }
+  }, 400);
+}
+
+// ── Full analysis ──────────────────────────────────────────────────────────────
+async function analyzeAll() {
+  if (!messages.length) return;
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="sp"></span> Đang phân tích...';
+  try {
+    const d = await fetch('/api/intent/analyze', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({messages})
+    }).then(r => r.json());
+    if (d.error) { alert('Lỗi: ' + d.error); return; }
+    renderResult(d);
+  } catch(e) { alert('Lỗi: ' + e.message); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Phân tích Intent toàn bộ hội thoại';
+  }
+}
+
+// ── Render result ──────────────────────────────────────────────────────────────
+const CAT_META = {
+  TRANSACTION:   {icon:'💰',color:'#3fb950',label:'Mua/Chốt',      w:'35%'},
+  SCHEDULING:    {icon:'📅',color:'#1877f2',label:'Lịch hẹn',      w:'25%'},
+  QUALIFICATION: {icon:'💵',color:'#d29922',label:'Tài chính',     w:'20%'},
+  LEGAL_CHECK:   {icon:'📋',color:'#bc8cff',label:'Pháp lý',       w:'10%'},
+  RESEARCH:      {icon:'🔍',color:'#39d353',label:'Tìm hiểu',      w:'10%'},
+  CONCERN:       {icon:'⚠️',color:'#f85149',label:'Lo ngại',       w:'adj'},
+};
+
+function renderResult(d) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultContent').style.display = 'block';
+  document.getElementById('signalsCard').style.display  = 'block';
+  document.getElementById('stageCard').style.display    = 'block';
+  document.getElementById('analyzedAt').textContent = d.analyzed_at || '';
+
+  const sc = d.composite_score || 0;
+  const color = d.intent_color || '#8b949e';
+
+  // Big score
+  document.getElementById('bigScore').textContent = sc.toFixed(1);
+  document.getElementById('bigScore').style.color = color;
+  const badge = document.getElementById('intentBadge');
+  badge.textContent = d.intent_level || '—';
+  badge.style.background = color + '22';
+  badge.style.color = color;
+  badge.style.border = `1px solid ${color}44`;
+  document.getElementById('probDisplay').innerHTML =
+    `<span class="confidence-dot" style="background:${d.confidence==='high'?'#3fb950':d.confidence==='medium'?'#d29922':'#f85149'}"></span>` +
+    `Xác suất chốt: <strong>${d.purchase_probability}</strong> · Độ tin cậy: ${d.confidence === 'high' ? 'Cao' : d.confidence === 'medium' ? 'Trung bình' : 'Thấp'}`;
+
+  // Stats
+  document.getElementById('statMsg').textContent = d.customer_message_count || 0;
+  document.getElementById('statResp').textContent = d.response_speed || '—';
+  document.getElementById('statProg').textContent = d.progression || '—';
+
+  // Action
+  const urgColor = {Ngay:'#f85149','Trong 24h':'#d29922','Trong tuần':'#1877f2',Nuture:'#8b949e'}[d.urgency] || '#8b949e';
+  document.getElementById('actionIcon').textContent = d.next_action_icon || '💬';
+  document.getElementById('actionTitle').textContent = d.next_action || '—';
+  const urg = document.getElementById('actionUrgency');
+  urg.textContent = `⏰ ${d.urgency}`;
+  urg.style.background = urgColor + '22';
+  urg.style.color = urgColor;
+  const ab = document.getElementById('actionBox');
+  ab.style.background = color + '0d';
+  ab.style.borderColor = color + '44';
+
+  // AI Summary
+  document.getElementById('aiSummary').textContent = d.summary || '—';
+
+  // Category grid
+  const cats = d.categories || {};
+  document.getElementById('catGrid').innerHTML = Object.entries(CAT_META).map(([cat, meta]) => {
+    const cs = cats[cat] || {normalized: 0, signals: []};
+    const n = cs.normalized || 0;
+    const sig_count = (cs.signals || []).length;
+    return `<div class="cat-item">
+      <div class="cat-header">
+        <span class="cat-label">${meta.icon} ${meta.label} ${cat!=='CONCERN'?`<span style="font-size:9px;color:var(--muted)">${meta.w}</span>`:''}</span>
+        <span class="cat-score" style="color:${meta.color}">${n.toFixed(1)}</span>
+      </div>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${n*10}%;background:${meta.color}"></div></div>
+      <div class="cat-signals">${sig_count} tín hiệu${sig_count > 0 ? ' — '+((cs.signals||[])[0]?.label||'') : ''}</div>
+    </div>`;
+  }).join('');
+
+  // Signal list
+  const topSigs = d.top_signals || [];
+  const allSigs = d.all_signals || [];
+  const displaySigs = topSigs.length ? topSigs : allSigs.slice(0,8);
+  document.getElementById('sigCount').textContent = `${allSigs.length} tín hiệu`;
+  if (!displaySigs.length) {
+    document.getElementById('signalList').innerHTML = '<div class="ld">Không phát hiện tín hiệu rõ ràng</div>';
+  } else {
+    document.getElementById('signalList').innerHTML = displaySigs.map(s => {
+      const m = CAT_META[s.category] || {icon:'❓',color:'#8b949e',label:s.category};
+      const scoreColor = s.score >= 7 ? '#3fb950' : s.score >= 4 ? '#d29922' : s.score < 0 ? '#f85149' : '#8b949e';
+      return `<div class="signal-chip" style="border-left-color:${m.color}">
+        <span class="sc-icon">${m.icon}</span>
+        <div style="flex:1">
+          <div class="sc-label">${s.label}</div>
+          <div class="sc-snippet">${s.snippet || ''}</div>
+        </div>
+        <span class="sc-score" style="color:${scoreColor}">${s.score >= 0 ? '+' : ''}${s.score}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Stage
+  const STAGES = ['Khởi đầu / Làm quen','Thu thập thông tin','Đánh giá & cân nhắc','Sẵn sàng chốt'];
+  const curStage = d.conversation_stage || '';
+  document.getElementById('stageDisplay').innerHTML = STAGES.map(s => {
+    const active = curStage.includes(s.split(' ')[0]);
+    return `<span style="padding:5px 12px;border-radius:16px;font-size:11px;font-weight:600;
+      background:${active?'rgba(99,102,241,.2)':'var(--bg3)'};
+      color:${active?'var(--accent)':'var(--muted)'};
+      border:1px solid ${active?'rgba(99,102,241,.4)':'var(--border)'}">${s}${active?' ◀':''}</span>`;
+  }).join('');
+  const NOTES = {
+    'Khởi đầu': 'Khách đang làm quen. Nên chia sẻ thông tin dự án, tạo interest trước.',
+    'Thu thập': 'Khách đang nghiên cứu. Gửi đầy đủ brochure, video dự án, so sánh phân khúc.',
+    'Đánh giá': 'Khách đang cân nhắc nghiêm túc. Ưu tiên giải đáp thắc mắc tài chính & pháp lý.',
+    'Sẵn sàng': '🎯 Khách sẵn sàng! Đặt lịch xem nhà mẫu và chuẩn bị đề xuất offer ngay.',
+  };
+  const noteKey = Object.keys(NOTES).find(k => curStage.includes(k)) || 'Khởi đầu';
+  document.getElementById('stageNote').textContent = NOTES[noteKey];
+}
+
+// Force render empty state on load
+renderMessages();
+</script>
+</body>
+</html>

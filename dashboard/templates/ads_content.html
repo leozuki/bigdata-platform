@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Content Performance — BDS Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#1877f2;--green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;--teal:#39d353;--r:12px}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:14px;height:56px;position:sticky;top:0;z-index:100}
+    nav .logo{font-size:17px;font-weight:700;color:var(--accent);margin-right:8px}
+    nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;transition:all .2s}
+    nav a:hover,nav a.active{color:var(--text);background:var(--bg3)}
+    nav .badge{background:var(--yellow);color:#000;font-size:10px;padding:2px 5px;border-radius:8px;margin-left:3px;font-weight:700}
+    .nr{margin-left:auto;display:flex;align-items:center;gap:10px}
+    .container{max-width:1500px;margin:0 auto;padding:24px}
+    h1{font-size:24px;font-weight:700;margin-bottom:4px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+
+    /* CONTROLS */
+    .ctrl{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+    select,button{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 13px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s}
+    button:hover,select:hover{border-color:var(--accent)}
+    .btn-p{background:var(--accent);border-color:var(--accent);font-weight:600}
+    .fmt-btn{padding:5px 12px;font-size:12px;border-radius:20px}
+    .fmt-btn.active{background:var(--accent);border-color:var(--accent)}
+
+    /* GRID LAYOUTS */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+    .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;transition:transform .2s}
+    .kpi:hover{transform:translateY(-2px)}
+    .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .kpi.bl::before{background:var(--accent)}.kpi.gr::before{background:var(--green)}.kpi.ye::before{background:var(--yellow)}.kpi.pu::before{background:var(--purple)}.kpi.re::before{background:var(--red)}.kpi.te::before{background:var(--teal)}
+    .kpi-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .kpi-val{font-size:22px;font-weight:700;line-height:1}
+    .kpi-sub{font-size:10px;color:var(--muted);margin-top:4px}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+    @media(max-width:1100px){.g3{grid-template-columns:1fr 1fr}}
+    @media(max-width:700px){.g2,.g3{grid-template-columns:1fr}}
+
+    /* CARDS */
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+    .ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .ch h3{font-size:14px;font-weight:600}
+    .cb{padding:16px}
+    .chart-box{position:relative;height:220px}
+
+    /* TABLE */
+    .tw{overflow-x:auto;max-height:480px;overflow-y:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:var(--bg3);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;text-align:left;position:sticky;top:0;cursor:pointer;user-select:none}
+    th:hover{color:var(--text)}
+    td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+    tr:last-child td{border:none}
+    tr:hover td{background:rgba(255,255,255,.02)}
+
+    /* SCORE BAR */
+    .score-bar{background:var(--bg3);border-radius:4px;height:6px;width:80px;display:inline-block;vertical-align:middle;overflow:hidden;margin-left:4px}
+    .score-fill{height:100%;border-radius:4px;transition:width .5s}
+
+    /* RATING BADGES */
+    .r-ex{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+    .r-go{background:rgba(57,211,83,.15);color:var(--teal);border:1px solid rgba(57,211,83,.3)}
+    .r-av{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.3)}
+    .r-po{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+    .rbd{padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600}
+
+    /* FORMAT COLORS */
+    .fmt-video{color:#1877f2}.fmt-carousel{color:#3fb950}.fmt-image{color:#d29922}
+    .fmt-personal{color:#bc8cff}.fmt-audience{color:#39d353}.fmt-creative{color:#f85149}.fmt-other{color:#8b949e}
+
+    /* FUNNEL */
+    .funnel{display:flex;flex-direction:column;gap:4px;padding:4px 0}
+    .fn-row{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+    .fn-label{width:80px;font-size:11px;color:var(--muted);flex-shrink:0}
+    .fn-bar{height:20px;background:var(--accent);border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:600;color:#fff;min-width:30px;transition:width .5s}
+    .fn-val{font-size:10px;color:var(--muted);width:60px;flex-shrink:0;text-align:right}
+
+    /* TOP/BOTTOM sections */
+    .rank-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    .rank-item{background:var(--bg3);border-radius:10px;padding:14px;border:1px solid var(--border);margin-bottom:8px;position:relative}
+    .rank-num{position:absolute;top:10px;right:12px;font-size:22px;font-weight:700;opacity:.08}
+    .rank-name{font-size:13px;font-weight:600;margin-bottom:6px}
+    .rank-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11px}
+    .rm{background:var(--bg2);border-radius:6px;padding:2px 7px;color:var(--muted)}
+    .rm span{color:var(--text);font-weight:600}
+
+    /* TREND CHIP */
+    .tr-up{color:var(--green)}.tr-dn{color:var(--red)}.tr-st{color:var(--muted)}
+
+    /* SPINNER */
+    .sp{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ld{color:var(--muted);font-size:12px;padding:24px;text-align:center}
+
+    /* CPL benchmark bars */
+    .bench-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .bench-label{width:110px;font-size:11px;flex-shrink:0}
+    .bench-track{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative}
+    .bench-fill{height:100%;border-radius:4px}
+  </style>
+</head>
+<body>
+<nav>
+  <span class="logo">⚡ BĐS Analytics</span>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/">🏠 Tổng quan</a><a href="/leads">🎯 Leads</a><a href="/clusters">🧠 Clusters</a>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px"></span>
+  <a href="/ads">📢 Ads</a><a href="/ads/optimizer">⚡ Optimizer</a>
+  <a href="/ads/multi-account">🏢 Multi-Account</a>
+  <a href="/ads/content" class="active">🎨 Content <span class="badge">HOT</span></a>
+  <div class="nr">
+    <select id="datePreset" onchange="loadAll()">
+      <option value="last_7d">7 ngày</option>
+      <option value="last_14d">14 ngày</option>
+      <option value="last_30d">30 ngày</option>
+    </select>
+  </div>
+</nav>
+
+<div class="container">
+  <div>
+    <h1>🎨 Content Performance Analytics</h1>
+    <p class="sub">Phân tích loại nội dung nào mang lại lead chất lượng cao nhất — Video | Carousel | Image | Personal Brand | Creative</p>
+  </div>
+
+  <!-- Format filter pills -->
+  <div class="ctrl">
+    <span style="font-size:12px;color:var(--muted)">Format:</span>
+    <button class="fmt-btn active" onclick="setFormat('all',this)">Tất cả</button>
+    <button class="fmt-btn" onclick="setFormat('video',this)">🎥 Video</button>
+    <button class="fmt-btn" onclick="setFormat('carousel',this)">🎠 Carousel</button>
+    <button class="fmt-btn" onclick="setFormat('image',this)">🖼️ Image</button>
+    <button class="fmt-btn" onclick="setFormat('personal',this)">👤 Personal</button>
+    <button class="fmt-btn" onclick="setFormat('audience',this)">🎯 Audience</button>
+    <button class="fmt-btn" onclick="setFormat('creative',this)">✨ Creative</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--muted)">Sort: <select id="sortBy" onchange="renderTable()" style="font-size:11px;padding:3px 8px">
+      <option value="composite_score">Composite Score</option>
+      <option value="cpl">CPL (thấp nhất)</option>
+      <option value="avg_quality">Quality Score</option>
+      <option value="total_leads">Leads nhiều nhất</option>
+      <option value="avg_ctr">CTR cao nhất</option>
+      <option value="conv_rate">Conv Rate</option>
+    </select></span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpiGrid"><div class="ld"><span class="sp"></span>Đang tải...</div></div>
+
+  <!-- 3 columns: Format comparison + CPL trend + Funnel -->
+  <div class="g3">
+    <!-- Format bar chart -->
+    <div class="card">
+      <div class="ch"><h3>📊 CPL theo Format</h3></div>
+      <div class="cb"><div class="chart-box"><canvas id="fmtChart"></canvas></div></div>
+    </div>
+    <!-- CPL trend by format over time -->
+    <div class="card">
+      <div class="ch"><h3>📈 Xu hướng CPL theo ngày</h3></div>
+      <div class="cb"><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+    </div>
+    <!-- Spend pie -->
+    <div class="card">
+      <div class="ch"><h3>💰 Phân bổ ngân sách theo Format</h3></div>
+      <div class="cb"><div class="chart-box"><canvas id="spendPie"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- Top 5 + Bottom 5 -->
+  <div class="rank-grid">
+    <!-- Top 5 -->
+    <div class="card">
+      <div class="ch"><h3>🏆 Top 5 — Content hiệu quả nhất</h3><span style="font-size:11px;color:var(--muted)">Composite Score cao nhất</span></div>
+      <div class="cb"><div id="top5">Loading...</div></div>
+    </div>
+    <!-- Bottom 5 -->
+    <div class="card">
+      <div class="ch"><h3>⚠️ Bottom 5 — Cần cải thiện</h3><span style="font-size:11px;color:var(--muted)">CPL cao hoặc quality thấp</span></div>
+      <div class="cb"><div id="bottom5">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Funnel Table -->
+  <div class="card">
+    <div class="ch"><h3>🔽 Funnel chuyển đổi theo Format</h3><span style="font-size:11px;color:var(--muted)">Impression → Click → Lead → Quality</span></div>
+    <div class="cb">
+      <div id="funnelSection">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Full table -->
+  <div class="card">
+    <div class="ch">
+      <h3>📋 Chi tiết hiệu suất — Tất cả Content Type</h3>
+      <span style="font-size:11px;color:var(--muted)">Tổng: <strong id="totalCount">—</strong> loại content</span>
+    </div>
+    <div class="cb">
+      <div class="tw">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Content Type</th>
+              <th>Format</th>
+              <th>Campaigns</th>
+              <th>Chi tiêu</th>
+              <th>Leads</th>
+              <th>CPL ↑</th>
+              <th>CTR</th>
+              <th>Conv%</th>
+              <th>Frequency</th>
+              <th>Quality</th>
+              <th>Score</th>
+              <th>Xu hướng</th>
+              <th>Đánh giá</th>
+            </tr>
+          </thead>
+          <tbody id="mainTb"><tr><td colspan="14" class="ld"><span class="sp"></span>Đang phân tích...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights Box -->
+  <div class="card">
+    <div class="ch"><h3>🧠 AI Insights — Gợi ý hành động</h3></div>
+    <div class="cb" id="aiInsights"><div class="ld"><span class="sp"></span></div></div>
+  </div>
+</div>
+
+<script>
+let allData = null;
+let currentFormat = 'all';
+let fmtChartInst = null, trendChartInst = null, pieChartInst = null;
+
+const fv = n => !n ? '0đ' : n >= 1e6 ? (n/1e6).toFixed(1)+'tr' : n >= 1e3 ? Math.round(n/1e3)+'k' : Math.round(n)+'đ';
+const fvn = n => n >= 1e6 ? (n/1e6).toFixed(1)+'tr' : n >= 1e3 ? (n/1e3).toFixed(0)+'k' : n;
+const ratingClass = r => ({excellent:'r-ex',good:'r-go',average:'r-av',poor:'r-po'}[r]||'r-av');
+const ratingLabel = r => ({excellent:'Xuất sắc',good:'Tốt',average:'Trung bình',poor:'Kém'}[r]||r);
+const trendIcon = t => t === 'improving' ? '<span class="tr-up">↓ CPL giảm</span>' : t === 'declining' ? '<span class="tr-dn">↑ CPL tăng</span>' : '<span class="tr-st">→ Ổn định</span>';
+const fmtColors = {video:'#1877f2',carousel:'#3fb950',image:'#d29922',personal:'#bc8cff',audience:'#39d353',creative:'#f85149',other:'#8b949e'};
+const fmtIcon = f => ({video:'🎥',carousel:'🎠',image:'🖼️',personal:'👤',audience:'🎯',creative:'✨',other:'❓'}[f]||'');
+const scoreColor = s => s >= 70 ? '#3fb950' : s >= 50 ? '#39d353' : s >= 35 ? '#d29922' : '#f85149';
+
+async function loadAll() {
+  const p = document.getElementById('datePreset').value;
+  document.getElementById('kpiGrid').innerHTML = '<div class="ld"><span class="sp"></span>Đang tải...</div>';
+  try {
+    const d = await fetch(`/api/ads/content-performance?date_preset=${p}`).then(r => r.json());
+    if (d.error) { console.error(d.error, d.traceback); return; }
+    allData = d;
+    renderKPIs();
+    renderCharts();
+    renderTable();
+    renderTop5();
+    renderFunnel();
+    renderInsights();
+  } catch(e) { console.error(e); }
+}
+
+function setFormat(fmt, btn) {
+  currentFormat = fmt;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+  renderTop5();
+}
+
+function renderKPIs() {
+  if (!allData) return;
+  const total = allData.by_content_type || [];
+  const best = total[0] || {};
+  const worst = [...total].sort((a,b) => b.cpl - a.cpl)[0] || {};
+  const totalLeads = allData.total_leads || 0;
+  const totalSpend = allData.total_spend || 0;
+  const avgQual = total.length ? total.reduce((s,r) => s + r.avg_quality * r.total_leads, 0) / Math.max(totalLeads, 1) : 0;
+  const bestFmt = (allData.by_format || []).sort((a,b) => a.cpl - b.cpl)[0] || {};
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi gr"><div class="kpi-lbl">🏆 Best Content</div><div class="kpi-val" style="font-size:14px;line-height:1.3">${best.label||'—'}</div><div class="kpi-sub">Score: ${best.composite_score||0}/100</div></div>
+    <div class="kpi gr"><div class="kpi-lbl">📉 CPL tốt nhất</div><div class="kpi-val">${fv(best.cpl||0)}</div><div class="kpi-sub">${best.format||''}</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">🎥 Format tốt nhất</div><div class="kpi-val" style="font-size:16px">${fmtIcon(bestFmt.format)} ${bestFmt.format||'—'}</div><div class="kpi-sub">CPL: ${fv(bestFmt.cpl||0)}</div></div>
+    <div class="kpi ye"><div class="kpi-lbl">⭐ Quality TB</div><div class="kpi-val">${avgQual.toFixed(1)}</div><div class="kpi-sub">Weighted avg</div></div>
+    <div class="kpi re"><div class="kpi-lbl">⚠️ Kém nhất</div><div class="kpi-val" style="font-size:13px;line-height:1.3">${worst.label||'—'}</div><div class="kpi-sub">CPL: ${fv(worst.cpl||0)}</div></div>
+    <div class="kpi pu"><div class="kpi-lbl">📦 Content types</div><div class="kpi-val">${total.length}</div><div class="kpi-sub">Đữ liệu 7-30 ngày</div></div>
+  `;
+}
+
+function renderCharts() {
+  if (!allData) return;
+  const byFmt = allData.by_format || [];
+  const labels = byFmt.map(f => `${fmtIcon(f.format)} ${f.format}`);
+  const cpls   = byFmt.map(f => Math.round(f.cpl / 1000));
+  const bgCols = byFmt.map(f => fmtColors[f.format] || '#888');
+
+  // Format bar
+  if (fmtChartInst) fmtChartInst.destroy();
+  const fc = document.getElementById('fmtChart').getContext('2d');
+  fmtChartInst = new Chart(fc, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'CPL (nghìn đ)', data: cpls, backgroundColor: bgCols.map(c => c+'88'), borderColor: bgCols, borderWidth: 2, borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#8b949e', callback: v => v+'k' }, grid: { color: '#21262d' } }, y: { ticks: { color: '#e6edf3', font: {size:11} }, grid: { display: false } } } }
+  });
+
+  // Trend
+  if (trendChartInst) trendChartInst.destroy();
+  const tc = document.getElementById('trendChart').getContext('2d');
+  const td = allData.cpl_trend_chart || {};
+  trendChartInst = new Chart(tc, {
+    type: 'line', data: { labels: td.labels || [], datasets: (td.datasets || []).map(ds => ({ ...ds, borderWidth: 2, tension: 0.4, pointRadius: 2 })) },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b949e', font: {size:10} } } },
+      scales: { x: { ticks: { color: '#8b949e', font:{size:9} }, grid: { color: '#21262d' } }, y: { ticks: { color: '#8b949e', font:{size:9}, callback: v => v+'k' }, grid: { color:'#21262d' } } } }
+  });
+
+  // Spend pie
+  if (pieChartInst) pieChartInst.destroy();
+  const pc = document.getElementById('spendPie').getContext('2d');
+  const spendByFmt = byFmt.map(f => Math.round(f.total_spend / 1e6));
+  pieChartInst = new Chart(pc, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: spendByFmt, backgroundColor: bgCols.map(c => c+'cc'), borderColor: bgCols, borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#8b949e', font: {size:10}, padding: 8 } } } }
+  });
+}
+
+function renderTable() {
+  if (!allData) return;
+  let rows = allData.by_content_type || [];
+  if (currentFormat !== 'all') rows = rows.filter(r => r.format === currentFormat);
+  const sortKey = document.getElementById('sortBy').value;
+  const asc = ['cpl', 'avg_freq'].includes(sortKey);
+  rows = [...rows].sort((a, b) => asc ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey]);
+  document.getElementById('totalCount').textContent = rows.length;
+
+  const tb = document.getElementById('mainTb');
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="14" class="ld">Không có dữ liệu</td></tr>'; return; }
+
+  tb.innerHTML = rows.map((r, i) => {
+    const cplCls = r.cpl < 150000 ? 'color:var(--green)' : r.cpl > 400000 ? 'color:var(--red)' : 'color:var(--yellow)';
+    const qCls   = r.avg_quality >= 7 ? 'var(--green)' : r.avg_quality < 4 ? 'var(--red)' : 'var(--yellow)';
+    const freqCls = r.freq_risk === 'high' ? 'color:var(--red)' : r.freq_risk === 'medium' ? 'color:var(--yellow)' : 'color:var(--green)';
+    const sc = r.composite_score;
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+      <td>
+        <strong style="font-size:12px">${r.label}</strong><br>
+        <span style="color:var(--muted);font-size:10px">${r.content_type}</span>
+      </td>
+      <td><span class="fmt-${r.format}" style="font-size:11px">${fmtIcon(r.format)} ${r.format}</span></td>
+      <td style="text-align:center">${r.campaigns}</td>
+      <td>${fv(r.total_spend)}</td>
+      <td><strong>${r.total_leads}</strong></td>
+      <td><strong style="${cplCls}">${fv(r.cpl)}</strong></td>
+      <td>${r.avg_ctr.toFixed(2)}%</td>
+      <td>${r.conv_rate.toFixed(1)}%</td>
+      <td style="${freqCls}">${r.avg_freq.toFixed(1)}x</td>
+      <td style="color:${qCls}">${r.avg_quality.toFixed(1)}/10</td>
+      <td>
+        <span style="font-weight:700;color:${scoreColor(sc)}">${sc}</span>
+        <div class="score-bar"><div class="score-fill" style="width:${sc}%;background:${scoreColor(sc)}"></div></div>
+      </td>
+      <td>${trendIcon(r.trend)}</td>
+      <td><span class="${ratingClass(r.rating)} rbd">${ratingLabel(r.rating)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTop5() {
+  if (!allData) return;
+  let rows = allData.by_content_type || [];
+  if (currentFormat !== 'all') rows = rows.filter(r => r.format === currentFormat);
+  const top5 = [...rows].sort((a,b) => b.composite_score - a.composite_score).slice(0,5);
+  const bot5 = [...rows].filter(r => r.total_leads > 0).sort((a,b) => a.composite_score - b.composite_score).slice(0,5);
+
+  const renderRankItem = (r, rank, isTop) => `
+    <div class="rank-item">
+      <div class="rank-num">${rank}</div>
+      <div class="rank-name">${fmtIcon(r.format)} ${r.label}</div>
+      <div class="rank-meta">
+        <div class="rm">CPL <span style="color:${r.cpl<150000?'var(--green)':r.cpl>400000?'var(--red)':'var(--yellow)'}">${fv(r.cpl)}</span></div>
+        <div class="rm">Leads <span>${r.total_leads}</span></div>
+        <div class="rm">Quality <span>${r.avg_quality.toFixed(1)}/10</span></div>
+        <div class="rm">CTR <span>${r.avg_ctr.toFixed(2)}%</span></div>
+        <div class="rm">Conv <span>${r.conv_rate.toFixed(1)}%</span></div>
+        <div class="rm">Score <span style="color:${scoreColor(r.composite_score)}">${r.composite_score}/100</span></div>
+      </div>
+      ${isTop ? `<div style="margin-top:6px;font-size:10px;color:var(--muted)">${r.trend==='improving'?'✅ CPL đang giảm — tăng budget':r.trend==='declining'?'⚠️ CPL đang tăng — kiểm tra fatigue':'→ Hiệu suất ổn định'}</div>` : `<div style="margin-top:6px;font-size:10px;color:var(--red)">CPL gấp ${(r.cpl/150000).toFixed(1)}x chuẩn — cân nhắc pause hoặc test mới</div>`}
+    </div>`;
+
+  document.getElementById('top5').innerHTML = top5.map((r,i) => renderRankItem(r, i+1, true)).join('') || '<div class="ld">Không có dữ liệu</div>';
+  document.getElementById('bottom5').innerHTML = bot5.map((r,i) => renderRankItem(r, i+1, false)).join('') || '<div class="ld">Không có dữ liệu</div>';
+}
+
+function renderFunnel() {
+  if (!allData) return;
+  const funnel = allData.funnel || [];
+  const maxImpr = Math.max(...funnel.map(f => f.impressions), 1);
+  const html = funnel.map(f => {
+    const iw = Math.round(f.impressions / maxImpr * 100);
+    const cw = f.impressions ? Math.round(f.clicks / f.impressions * 100) : 0;
+    const lw = f.clicks ? Math.round(f.leads / f.clicks * 100) : 0;
+    return `<div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:${fmtColors[f.format]||'#888'}">${fmtIcon(f.format)} ${f.format} — Quality: ${f.quality.toFixed(1)}/10</div>
+      <div class="fn-row"><div class="fn-label">Impression</div><div class="fn-bar" style="width:${Math.max(iw,3)}%;background:${fmtColors[f.format]||'#888'}33;border:1px solid ${fmtColors[f.format]||'#888'};color:${fmtColors[f.format]||'#888'}">${fvn(f.impressions)}</div></div>
+      <div class="fn-row"><div class="fn-label">Clicks (${cw}%)</div><div class="fn-bar" style="width:${Math.max(cw/2,2)}%;background:${fmtColors[f.format]||'#888'}55;border:1px solid ${fmtColors[f.format]||'#888'};color:${fmtColors[f.format]||'#888'}">${fvn(f.clicks)}</div></div>
+      <div class="fn-row"><div class="fn-label">Leads (${lw}%)</div><div class="fn-bar" style="width:${Math.max(lw/2,1)}%;background:${fmtColors[f.format]||'#888'};color:#fff">${f.leads}</div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('funnelSection').innerHTML = html || '<div class="ld">Không có dữ liệu</div>';
+}
+
+function renderInsights() {
+  if (!allData) return;
+  const rows = allData.by_content_type || [];
+  const byFmt = allData.by_format || [];
+  const msgs = [];
+
+  // 1. Best content type
+  const top = rows[0];
+  if (top) msgs.push({ cls: 'ok', icon: '🏆', title: `Nhân rộng ngay: "${top.label}"`, body: `CPL ${fv(top.cpl)}, Quality ${top.avg_quality.toFixed(1)}/10, Conv Rate ${top.conv_rate.toFixed(1)}%. Score ${top.composite_score}/100 — Tăng budget ít nhất x1.5` });
+
+  // 2. Video vs Image comparison
+  const vid = byFmt.find(f => f.format === 'video');
+  const img = byFmt.find(f => f.format === 'image');
+  if (vid && img) {
+    if (vid.cpl < img.cpl) msgs.push({ cls: 'info', icon: '🎥', title: 'Video thắng Image về CPL', body: `Video CPL=${fv(vid.cpl)} vs Image CPL=${fv(img.cpl)} (-${Math.round((1-vid.cpl/img.cpl)*100)}%). Video lead quality thường cao hơn vì user đã xem qua nội dung` });
+    else msgs.push({ cls: 'info', icon: '🖼️', title: 'Image thắng Video về CPL', body: `Image CPL=${fv(img.cpl)} vs Video CPL=${fv(vid.cpl)}. Image nhanh hơn A/B test. Dùng cho targeting retarget hoặc offer cụ thể` });
+  }
+
+  // 3. Personal brand
+  const personal = byFmt.find(f => f.format === 'personal');
+  if (personal && personal.cpl < 100000) msgs.push({ cls: 'ok', icon: '👤', title: 'Personal Brand agents hiệu quả bất ngờ', body: `CPL ${fv(personal.cpl)} — thấp nhất toàn hệ thống. Tệp audience đã biết agent → intent cao hơn nhiều. Nên huấn luyện thêm agents chạy ads` });
+
+  // 4. Declining content
+  const declining = rows.filter(r => r.trend === 'declining' && r.total_leads > 5);
+  if (declining.length) msgs.push({ cls: 'warn', icon: '📉', title: `${declining.length} content type đang giảm hiệu quả`, body: `${declining.map(r => r.label).join(', ')}. CPL đang tăng theo ngày → cần refresh creative hoặc test audience mới` });
+
+  // 5. Poor conv rate
+  const poorConv = rows.filter(r => r.conv_rate < 2 && r.total_spend > 5_000_000);
+  if (poorConv.length) msgs.push({ cls: 'crit', icon: '⚠️', title: `${poorConv.length} content có Conv Rate <2% nhưng chi tiêu cao`, body: `${poorConv.map(r=>r.label).join(', ')} — click nhiều, lead ít. Landing page có thể là vấn đề, không phải creative` });
+
+  // 6. High frequency warning
+  const highFreq = rows.filter(r => r.freq_risk === 'high' && r.total_spend > 2_000_000);
+  if (highFreq.length) msgs.push({ cls: 'warn', icon: '🔁', title: `Ad Fatigue: ${highFreq.length} content type tần suất cao`, body: `${highFreq.map(r=>r.label).join(', ')} — Frequency >3.5x. Cần refresh creative hoặc broadening audience` });
+
+  // 7. Improving content
+  const improving = rows.filter(r => r.trend === 'improving').slice(0,2);
+  if (improving.length) msgs.push({ cls: 'ok', icon: '📈', title: 'Content đang cải thiện — tăng budget', body: `${improving.map(r=>r.label).join(', ')} có CPL đang giảm theo ngày → dấu hiệu tốt, phân bổ thêm ngân sách` });
+
+  const clsMap = {ok:'insight ok',warn:'insight warn',crit:'insight crit',info:'insight info'};
+  document.getElementById('aiInsights').innerHTML = msgs.map(m => `
+    <div class="${clsMap[m.cls]||'insight info'}" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid ${m.cls==='ok'?'var(--green)':m.cls==='warn'?'var(--yellow)':m.cls==='crit'?'var(--red)':'var(--accent)'}">
+      <div style="font-size:12px;font-weight:600;margin-bottom:3px">${m.icon} ${m.title}</div>
+      <div style="font-size:11px;color:var(--muted)">${m.body}</div>
+    </div>`).join('') || '<div class="ld">Không có insights</div>';
+}
+
+loadAll();
+</script>
+</body>
+</html>

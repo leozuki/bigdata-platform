@@ -1,0 +1,37 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ===== DATA: chứa thông tin khách hàng (PII) - KHÔNG BAO GIỜ commit =====
+data/**
+!data/.gitkeep
+*.xlsx
+*.xls
+*.csv
+*.db
+*.sqlite
+*.db-wal
+*.db-shm
+
+# Scratch scripts (chứa dữ liệu tra cứu thật)
+scratch/
+
+# Local git backup
+.git_backup_old/
+
+# Build
+dist/
+build/
+*.log
+.DS_Store

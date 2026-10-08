@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phân cụm KH — BĐS Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#0a0f1e;--surface:rgba(255,255,255,.05);--border:rgba(255,255,255,.08);--primary:#6366f1;--gold:#f59e0b;--green:#10b981;--text:#f1f5f9;--text-muted:#94a3b8;--radius:16px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(99,102,241,.12) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 80%,rgba(245,158,11,.08) 0%,transparent 60%);pointer-events:none}
+  .wrapper{position:relative;z-index:1}
+  nav{background:#161b22;border-bottom:1px solid rgba(255,255,255,.08);padding:0 24px;display:flex;align-items:center;gap:12px;height:56px;position:sticky;top:0;z-index:100}
+  .nav-logo{font-size:17px;font-weight:800;background:linear-gradient(135deg,#6366f1,#f59e0b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-right:4px;white-space:nowrap}
+  nav a{color:#94a3b8;text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;transition:all .2s;white-space:nowrap}
+  nav a:hover,nav a.active{color:#e6edf3;background:#21262d}
+  nav a.active{color:#6366f1}
+  nav .nav-div{width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 4px}
+  nav .nav-badge{background:#1877f2;color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;margin-left:3px}
+  nav .nav-badge.new{background:#3fb950}
+  main{max-width:1200px;margin:0 auto;padding:32px 24px}
+  h1{font-size:28px;font-weight:800;margin-bottom:8px}
+  .sub{color:var(--text-muted);font-size:14px;margin-bottom:32px}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;backdrop-filter:blur(12px)}
+  .card-title{font-size:15px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+  .chart-wrap{height:320px;position:relative}
+
+  .cluster-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+  .cluster-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;backdrop-filter:blur(12px)}
+  .cluster-icon{font-size:40px;margin-bottom:12px}
+  .cluster-name{font-size:16px;font-weight:700;margin-bottom:8px}
+  .cluster-count{font-size:32px;font-weight:800;margin-bottom:4px}
+  .cluster-avg{font-size:13px;color:var(--text-muted)}
+  .cluster-desc{font-size:12px;color:var(--text-muted);margin-top:12px;line-height:1.6}
+
+  .loading{text-align:center;padding:60px;color:var(--text-muted)}
+  .spinner{display:inline-block;width:24px;height:24px;border:2px solid rgba(255,255,255,.3);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media(max-width:768px){.grid-2,.cluster-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <nav>
+    <span class="nav-logo">⚡ BĐS Analytics</span>
+    <span class="nav-div"></span>
+    <a href="/">🏠 Tổng quan</a>
+    <a href="/leads">🎯 Leads</a>
+    <a href="/clusters" class="active">🧠 Clusters</a>
+    <span class="nav-div"></span>
+    <a href="/ads">📢 Ads</a>
+    <a href="/ads/optimizer">⚡ Optimizer</a>
+    <a href="/ads/multi-account">🏢 Multi-Account</a>
+    <a href="/ads/content">🎨 Content <span class="nav-badge new">HOT</span></a>
+  </nav>
+
+  <main>
+    <h1>🧠 Phân Cụm Khách Hàng</h1>
+    <p class="sub">K-Means clustering tự động phân loại khách hàng theo hành vi và sở thích BĐS</p>
+
+    <!-- Cluster Cards -->
+    <div class="cluster-cards" id="clusterCards">
+      <div class="loading"><span class="spinner"></span></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><i class="bi bi-pie-chart-fill"></i> Phân bố nhóm khách hàng</div>
+        <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="bi bi-bar-chart-fill"></i> Điểm trung bình theo nhóm</div>
+        <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const CLUSTER_INFO = {
+  'VIP':     { icon: '👑', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', desc: 'Tương tác BĐS nghỉ dưỡng, biệt thự, hạng sang. Có khả năng chi trả cao. Giao Sales chuyên luxury.' },
+  'Ở thực':  { icon: '🏠', color: '#10b981', bg: 'rgba(16,185,129,.15)', desc: 'Tìm chung cư, nhà phố gần trường học/bệnh viện. Mua để ở, cần tư vấn kỹ về tiện ích & pháp lý.' },
+  'Đầu cơ':  { icon: '📈', color: '#6366f1', bg: 'rgba(99,102,241,.15)', desc: 'Quan tâm đất nền tỉnh, quy hoạch, phân lô. Mua để đầu tư lướt sóng hoặc giữ dài hạn.' },
+  'Chưa phân': { icon: '❓', color: '#94a3b8', bg: 'rgba(148,163,184,.1)', desc: 'Chưa đủ dữ liệu để phân loại. Cần thêm thông tin từ Phase 2.' },
+};
+
+let donutChart, barChart;
+
+async function loadClusters() {
+  const r = await fetch('/api/clusters');
+  const data = await r.json();
+
+  if (!data.length) {
+    document.getElementById('clusterCards').innerHTML =
+      '<div class="loading" style="grid-column:1/-1">Chưa có dữ liệu clustering. Hãy chạy Phase 3.</div>';
+    return;
+  }
+
+  // Cluster cards
+  const cards = data.map(c => {
+    const info = CLUSTER_INFO[c.label] || CLUSTER_INFO['Chưa phân'];
+    return `<div class="cluster-card" style="border-color:${info.color}30;background:${info.bg}">
+      <div class="cluster-icon">${info.icon}</div>
+      <div class="cluster-name" style="color:${info.color}">${c.label}</div>
+      <div class="cluster-count">${c.count.toLocaleString('vi-VN')}</div>
+      <div class="cluster-avg">Điểm TB: <strong style="color:${info.color}">${c.avg_score}</strong>/10</div>
+      <div class="cluster-desc">${info.desc}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('clusterCards').innerHTML = cards;
+
+  const labels = data.map(c => c.label);
+  const counts  = data.map(c => c.count);
+  const scores  = data.map(c => c.avg_score);
+  const colors  = data.map(c => (CLUSTER_INFO[c.label] || CLUSTER_INFO['Chưa phân']).color);
+
+  // Donut chart
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: counts, backgroundColor: colors.map(c => c + 'cc'), borderColor: colors, borderWidth: 2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16, font: { size: 13 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString('vi-VN')} KH` } }
+      },
+      cutout: '65%',
+    }
+  });
+
+  // Bar chart
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Điểm trung bình',
+        data: scores,
+        backgroundColor: colors.map(c => c + '80'),
+        borderColor: colors, borderWidth: 2, borderRadius: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 10, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,.05)' } },
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+      }
+    }
+  });
+}
+
+loadClusters();
+</script>
+</body>
+</html>
