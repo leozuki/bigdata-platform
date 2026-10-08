@@ -1,119 +1,119 @@
 # BigData Lead Platform
 
-Công cụ giúp đội kinh doanh bất động sản quản lý và khai thác danh sách khách hàng hiệu quả hơn.
+A tool that helps real estate sales teams organize their customer lists and decide who to call first.
 
-Thông thường, dữ liệu khách hàng nằm rải rác trong rất nhiều file Excel, CSV với định dạng khác nhau, trùng lặp và thiếu thông tin. Dự án này gom tất cả lại một chỗ, làm sạch, bổ sung thông tin còn thiếu, sau đó chấm điểm từng khách hàng để Sales biết nên gọi cho ai trước.
+Customer data usually ends up scattered across dozens of Excel and CSV files, each with its own format, full of duplicates and missing details. This project pulls everything into one place, cleans it up, fills in the gaps, and then scores every customer so the sales team knows where to focus.
 
-Ngoài ra, hệ thống có thêm phần phân tích quảng cáo Facebook: theo dõi chi phí, đánh giá chất lượng khách hàng mà mỗi chiến dịch mang về và gợi ý nên tăng hay giảm ngân sách.
+It also includes a Facebook Ads module that tracks spending, measures the quality of the leads each campaign brings in, and suggests which campaigns to scale up or pause.
 
-**Lưu ý:** Repo này chỉ chứa mã nguồn, không kèm bất kỳ dữ liệu khách hàng nào.
+**Note:** This repository contains source code only. No customer data is included.
 
-## Hệ thống làm được gì
+## What it does
 
-**1. Gom và làm sạch dữ liệu**
-Đọc hàng loạt file Excel/CSV, tự xử lý lỗi font tiếng Việt, chuẩn hoá số điện thoại và họ tên, loại bỏ khách hàng bị trùng. Nếu có file đối chiếu, hệ thống sẽ ghép số điện thoại với tài khoản Facebook tương ứng.
+**1. Collects and cleans data**
+Reads large batches of Excel/CSV files, fixes Vietnamese encoding issues, normalizes phone numbers and names, and removes duplicate customers. If a mapping file is provided, it also links phone numbers to the matching Facebook accounts.
 
-**2. Bổ sung thông tin**
-Lấy thêm dữ liệu từ các file xuất ra của công cụ quét Facebook và từ kết quả tìm kiếm Google, rồi ghép vào hồ sơ khách hàng đã có.
+**2. Enriches profiles**
+Pulls in extra information from Facebook scraping tool exports and Google search results, then merges it into existing customer profiles.
 
-**3. Chấm điểm khách hàng**
-Dùng máy học để chia khách hàng thành từng nhóm có đặc điểm giống nhau, sau đó chấm điểm từ 0 đến 10. Khách từ 8 điểm trở lên được xếp vào nhóm VIP, nên ưu tiên chăm sóc.
+**3. Scores customers**
+Uses machine learning to group customers with similar traits, then gives each one a score from 0 to 10. Customers scoring 8 or higher are marked as VIP and should be contacted first.
 
-**4. Phân tích quảng cáo Facebook**
-Kết nối với tài khoản quảng cáo và Fanpage để xem chi phí cho mỗi khách hàng, tỷ lệ nhấp, mức độ lặp lại quảng cáo... Hệ thống đưa ra gợi ý tạm dừng chiến dịch kém hoặc tăng ngân sách cho chiến dịch tốt. Mặc định chế độ này chỉ hiển thị gợi ý, không tự thay đổi quảng cáo thật.
+**4. Analyzes Facebook Ads**
+Connects to your ad account and Facebook Page to show cost per lead, click-through rate, ad frequency, and more. It recommends pausing weak campaigns and increasing the budget for strong ones. By default it only shows suggestions and never changes live ads.
 
-**5. Giao diện xem kết quả**
-Có hai trang dashboard chạy trên trình duyệt:
-- Trang chính (cổng 5000): danh sách khách hàng, hồ sơ chi tiết, quản lý quảng cáo.
-- Trang phân tích (cổng 8502): tình trạng dữ liệu, các nhóm khách hàng, hồ sơ tổng hợp.
+**5. Shows results in a dashboard**
+Two browser-based dashboards are included:
+- Main dashboard (port 5000): customer list, detailed profiles, ad management.
+- Analytics dashboard (port 8502): data health, customer groups, combined profiles.
 
-## Cài đặt
+## Installation
 
-Cần có Python 3.10 trở lên.
+Requires Python 3.10 or newer.
 
 ```bash
 git clone https://github.com/leozuki/bigdata-platform.git
 cd bigdata-platform
 
 python -m venv .venv
-.venv\Scripts\activate          # Trên macOS/Linux: source .venv/bin/activate
+.venv\Scripts\activate          # On macOS/Linux: source .venv/bin/activate
 
 pip install -r requirements.txt
 pip install streamlit
 ```
 
-Tiếp theo, tạo file cấu hình từ file mẫu:
+Next, create your config file from the template:
 
 ```bash
-copy .env.example .env          # Trên macOS/Linux: cp .env.example .env
+copy .env.example .env          # On macOS/Linux: cp .env.example .env
 ```
 
-Mở file `.env` và điền thông tin của bạn. Các mục chính:
+Open `.env` and fill in your details. The main settings are:
 
-- `DATABASE_URL`: nơi lưu dữ liệu. Mặc định dùng SQLite, không cần cài thêm gì.
-- `RAW_DATA_DIR`: thư mục chứa các file Excel/CSV gốc.
-- `GOOGLE_API_KEY`, `GOOGLE_CSE_ID`: cần nếu muốn tìm thêm thông tin trên Google.
-- `META_...`: thông tin ứng dụng, tài khoản quảng cáo và Fanpage Facebook.
-- `ADS_DRY_RUN=true`: chỉ xem gợi ý, không thay đổi quảng cáo thật. Nên giữ nguyên cho đến khi đã kiểm tra kỹ.
-- `ADS_MOCK_MODE=true`: dùng dữ liệu giả, tiện để chạy thử khi chưa có tài khoản Facebook.
+- `DATABASE_URL`: where data is stored. Uses SQLite by default, so nothing extra to install.
+- `RAW_DATA_DIR`: folder containing your original Excel/CSV files.
+- `GOOGLE_API_KEY`, `GOOGLE_CSE_ID`: needed only if you want to look up extra information on Google.
+- `META_...`: your Facebook app, ad account, and Page details.
+- `ADS_DRY_RUN=true`: show suggestions only, without touching live ads. Keep this on until you've reviewed the results carefully.
+- `ADS_MOCK_MODE=true`: use fake data, handy for trying things out before connecting a Facebook account.
 
-File `.env` chứa mật khẩu và khoá truy cập nên đã được loại khỏi Git. Đừng chia sẻ file này.
+The `.env` file holds passwords and access keys, so it is excluded from Git. Never share it.
 
-## Cách dùng
+## Usage
 
-**Xử lý dữ liệu**
+**Process data**
 
 ```bash
-python main.py                                  # Chạy toàn bộ các bước
-python main.py --phase 1 --raw-dir D:/DuLieu    # Chỉ gom và làm sạch dữ liệu
-python main.py --phase 2 --fb-csv facebook.csv  # Chỉ bổ sung thông tin
-python main.py --phase 3                        # Chỉ chấm điểm khách hàng
+python main.py                                   # Run all steps
+python main.py --phase 1 --raw-dir D:/MyData     # Collect and clean data only
+python main.py --phase 2 --fb-csv facebook.csv   # Enrich profiles only
+python main.py --phase 3                         # Score customers only
 ```
 
-**Mở giao diện**
+**Open the dashboards**
 
 ```bash
-python start.py               # Trang chính: http://localhost:5000
-python start.py --streamlit   # Trang phân tích: http://localhost:8502
-python start.py --both        # Mở cả hai
+python start.py               # Main dashboard: http://localhost:5000
+python start.py --streamlit   # Analytics dashboard: http://localhost:8502
+python start.py --both        # Open both
 ```
 
-Trên Windows có thể nhấp đúp vào `start.bat` thay cho lệnh trên.
+On Windows you can also just double-click `start.bat`.
 
-**Chạy thử với dữ liệu mẫu**
+**Try it with sample data**
 
-Nếu chưa có dữ liệu thật, có thể tạo dữ liệu giả để thử:
+If you don't have real data yet, generate some fake data to test with:
 
 ```bash
 python tests/generate_sample_data.py
 pytest tests/
 ```
 
-## Cấu trúc thư mục
+## Project structure
 
 ```
-main.py               Chạy các bước xử lý dữ liệu
-start.py, start.bat   Mở giao diện dashboard
-dashboard/            Trang dashboard chính (Flask)
+main.py               Runs the data processing steps
+start.py, start.bat   Launches the dashboards
+dashboard/            Main dashboard (Flask)
 src/
-  phase1_pipeline/    Gom, làm sạch, ghép số điện thoại với Facebook
-  phase2_enrichment/  Bổ sung thông tin từ Facebook và Google
-  phase3_scoring/     Phân nhóm và chấm điểm khách hàng
-  analytics/          Các mô hình phân tích khách hàng
-  ads_engine/         Phân tích và tối ưu quảng cáo Facebook
-  dashboard/          Trang phân tích (Streamlit)
-tests/                Kiểm thử và tạo dữ liệu mẫu
-data/                 Để trống, dùng chứa dữ liệu trên máy của bạn
+  phase1_pipeline/    Collect, clean, link phone numbers to Facebook
+  phase2_enrichment/  Add information from Facebook and Google
+  phase3_scoring/     Group and score customers
+  analytics/          Customer analysis models
+  ads_engine/         Facebook Ads analysis and optimization
+  dashboard/          Analytics dashboard (Streamlit)
+tests/                Tests and sample data generator
+data/                 Empty; holds your data locally
 ```
 
-## Về dữ liệu cá nhân
+## About personal data
 
-Hệ thống này làm việc với thông tin cá nhân như số điện thoại, họ tên, tài khoản mạng xã hội. Khi sử dụng, vui lòng:
+This system works with personal information such as phone numbers, names, and social media accounts. When using it, please:
 
-- Chỉ xử lý dữ liệu mà bạn có quyền thu thập và sử dụng hợp pháp, tuân thủ Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.
-- Tuân thủ điều khoản sử dụng của Facebook và Google.
-- Giữ dữ liệu trong thư mục `data/` trên máy. Thư mục này đã được cấu hình để không bị đưa lên GitHub.
+- Only process data you are legally allowed to collect and use, in line with Vietnam's Decree 13/2023/ND-CP on personal data protection and any other laws that apply to you.
+- Follow Facebook's and Google's terms of service.
+- Keep your data inside the `data/` folder on your machine. This folder is configured so it never gets pushed to GitHub.
 
-## Công nghệ sử dụng
+## Built with
 
 Python, pandas, scikit-learn, SQLAlchemy, Flask, Streamlit, Facebook Business SDK.
